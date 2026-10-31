@@ -1,0 +1,572 @@
+
+======================================================================
+PRUEBAS DE CORRECCIONES DEL MENÚ — E1 a E11
+======================================================================
+
+🧪 E1: Listar préstamos activos
+--------------------------------------------------
+  [límite] ✅
+    ENTRADA:            sin préstamos
+    OPERACIÓN:          listar_activos().obtener_tamaño()
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [normal] ✅
+    ENTRADA:            P0001 y P0002 activos
+    OPERACIÓN:          listar_activos() devuelve VectorDinamico
+    RESULTADO ESPERADO: True
+    RESULTADO OBTENIDO: True
+  [normal] ✅
+    ENTRADA:            P0001 y P0002 activos
+    OPERACIÓN:          códigos en listar_activos()
+    RESULTADO ESPERADO: P0001,P0002
+    RESULTADO OBTENIDO: P0001,P0002
+  [normal] ✅
+    ENTRADA:            P0001 devuelto, P0002 activo
+    OPERACIÓN:          listar_activos() solo trae 'Activo'
+    RESULTADO ESPERADO: P0002
+    RESULTADO OBTENIDO: P0002
+  [menú] ✅
+    ENTRADA:            Préstamos → 1 (U001, R0001, Centro) → 3
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: sin Traceback, 'Total prestamos activos: 1'
+    RESULTADO OBTENIDO: sin Traceback, 'Total prestamos activos: 1'
+  [menú] ✅
+    ENTRADA:            Préstamos → 3 sin préstamos
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: sin Traceback, 'Total prestamos activos: 0'
+    RESULTADO OBTENIDO: sin Traceback, 'Total prestamos activos: 0'
+✅ E1: CORRECTO
+
+🧪 E2: ValueError capturados en el menú
+--------------------------------------------------
+  [error] ✅
+    ENTRADA:            nombre='', email='x@u'
+    OPERACIÓN:          GestorUsuarios.registrar
+    RESULTADO ESPERADO: ValueError: El nombre del usuario no puede estar vacío
+    RESULTADO OBTENIDO: ValueError: El nombre del usuario no puede estar vacío
+  [error] ✅
+    ENTRADA:            nombre='Ana', email='   '
+    OPERACIÓN:          GestorUsuarios.registrar
+    RESULTADO ESPERADO: ValueError: El email del usuario no puede estar vacío
+    RESULTADO OBTENIDO: ValueError: El email del usuario no puede estar vacío
+  [menú] ✅
+    ENTRADA:            Usuarios → 1 con nombre y email vacíos
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: sin Traceback, 'Error: El nombre del usuario no puede estar vacío'
+    RESULTADO OBTENIDO: sin Traceback, 'Error: El nombre del usuario no puede estar vacío'
+  [menú] ✅
+    ENTRADA:            Usuarios → 1 con 'Luis', 'luis@uni.edu'
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: sin Traceback, 'Usuario registrado: U003'
+    RESULTADO OBTENIDO: sin Traceback, 'Usuario registrado: U003'
+  [menú] ✅
+    ENTRADA:            Préstamos → usuario U999, sede 'Marte', deshacer sin operaciones
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: sin Traceback, 3 mensajes
+    RESULTADO OBTENIDO: sin Traceback, 3 mensajes
+✅ E2: CORRECTO
+
+🧪 E3: Préstamo según unidades de la sede
+--------------------------------------------------
+  [normal] ✅
+    ENTRADA:            R0001 con 5 en Centro
+    OPERACIÓN:          prestar 5 veces
+    RESULTADO ESPERADO: P0001,P0002,P0003,P0004,P0005
+    RESULTADO OBTENIDO: P0001,P0002,P0003,P0004,P0005
+  [límite] ✅
+    ENTRADA:            se prestó la última unidad
+    OPERACIÓN:          disponibilidad R0001/Centro
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [error] ✅
+    ENTRADA:            R0001 con 0 en Centro
+    OPERACIÓN:          sexto préstamo
+    RESULTADO ESPERADO: SinUnidadesError: Sin unidades disponibles de R0001 en Centro
+    RESULTADO OBTENIDO: SinUnidadesError: Sin unidades disponibles de R0001 en Centro
+  [error] ✅
+    ENTRADA:            SinUnidadesError
+    OPERACIÓN:          ¿es un ValueError?
+    RESULTADO ESPERADO: True
+    RESULTADO OBTENIDO: True
+  [error] ✅
+    ENTRADA:            R0001 con 0 en Norte
+    OPERACIÓN:          prestar en Norte
+    RESULTADO ESPERADO: SinUnidadesError: Sin unidades disponibles de R0001 en Norte
+    RESULTADO OBTENIDO: SinUnidadesError: Sin unidades disponibles de R0001 en Norte
+  [normal] ✅
+    ENTRADA:            GestorPrestamos
+    OPERACIÓN:          ¿todavía tiene el atributo 'exclusivo'?
+    RESULTADO ESPERADO: False
+    RESULTADO OBTENIDO: False
+  [menú] ✅
+    ENTRADA:            dos préstamos de R0001 en Centro y ver la matriz
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: P0002 registrado, nunca 'None', Centro R0001 = 3
+    RESULTADO OBTENIDO: P0002 registrado, nunca 'None', Centro R0001 = 3
+  [menú] ✅
+    ENTRADA:            R0003 (1 unidad): U001 presta, U002 intenta y responde 's'
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: sin unidades + 'Turno S0001 asignado, posicion 1 en la fila'
+    RESULTADO OBTENIDO: sin unidades + 'Turno S0001 asignado, posicion 1 en la fila'
+✅ E3: CORRECTO
+
+🧪 E4: Inventario en préstamo, devolución y deshacer
+--------------------------------------------------
+  [normal] ✅
+    ENTRADA:            R0001 con 5 en Centro
+    OPERACIÓN:          prestar 1
+    RESULTADO ESPERADO: 4
+    RESULTADO OBTENIDO: 4
+  [límite] ✅
+    ENTRADA:            4 préstamos más
+    OPERACIÓN:          disponibilidad
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [normal] ✅
+    ENTRADA:            disponibilidad 0
+    OPERACIÓN:          devolver P0001
+    RESULTADO ESPERADO: 1
+    RESULTADO OBTENIDO: 1
+  [normal] ✅
+    ENTRADA:            disponibilidad 1 tras devolver
+    OPERACIÓN:          deshacer esa devolución
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [normal] ✅
+    ENTRADA:            deshacer devolución
+    OPERACIÓN:          estado de P0001
+    RESULTADO ESPERADO: Activo
+    RESULTADO OBTENIDO: Activo
+  [normal] ✅
+    ENTRADA:            disponibilidad 0
+    OPERACIÓN:          deshacer el préstamo P0005
+    RESULTADO ESPERADO: 1
+    RESULTADO OBTENIDO: 1
+  [normal] ✅
+    ENTRADA:            deshacer préstamo
+    OPERACIÓN:          ¿P0005 sigue existiendo?
+    RESULTADO ESPERADO: None
+    RESULTADO OBTENIDO: None
+  [normal] ✅
+    ENTRADA:            Norte no participó
+    OPERACIÓN:          disponibilidad R0001/Norte
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [límite] ✅
+    ENTRADA:            devolución de P0004 y luego inventario puesto en 0 a mano
+    OPERACIÓN:          deshacer
+    RESULTADO ESPERADO: ValueError: No se puede deshacer la devolucion de P0004: no quedan unidades de R0001 en Centro
+    RESULTADO OBTENIDO: ValueError: No se puede deshacer la devolucion de P0004: no quedan unidades de R0001 en Centro
+  [límite] ✅
+    ENTRADA:            deshacer rechazado
+    OPERACIÓN:          tope de la pila (la operación no se perdió)
+    RESULTADO ESPERADO: registrar_devolucion P0004
+    RESULTADO OBTENIDO: registrar_devolucion P0004
+  [límite] ✅
+    ENTRADA:            deshacer rechazado
+    OPERACIÓN:          estado de P0004 (sin cambios)
+    RESULTADO ESPERADO: Devuelto
+    RESULTADO OBTENIDO: Devuelto
+✅ E4: CORRECTO
+
+🧪 E5: Devolución inexistente
+--------------------------------------------------
+  [error] ✅
+    ENTRADA:            P9999 no existe
+    OPERACIÓN:          registrar_devolucion('P9999')
+    RESULTADO ESPERADO: False
+    RESULTADO OBTENIDO: False
+  [normal] ✅
+    ENTRADA:            P0001 activo
+    OPERACIÓN:          registrar_devolucion('P0001')
+    RESULTADO ESPERADO: True
+    RESULTADO OBTENIDO: True
+  [límite] ✅
+    ENTRADA:            P0001 ya devuelto
+    OPERACIÓN:          registrar_devolucion('P0001') otra vez
+    RESULTADO ESPERADO: False
+    RESULTADO OBTENIDO: False
+  [límite] ✅
+    ENTRADA:            segunda devolución rechazada
+    OPERACIÓN:          disponibilidad (no suma dos veces)
+    RESULTADO ESPERADO: 5
+    RESULTADO OBTENIDO: 5
+  [menú] ✅
+    ENTRADA:            Préstamos → 2 con P9999
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: 'Error: El prestamo P9999 no existe o ya fue devuelto', sin 'Devolucion registrada'
+    RESULTADO OBTENIDO: 'Error: El prestamo P9999 no existe o ya fue devuelto', sin 'Devolucion registrada'
+✅ E5: CORRECTO
+
+🧪 E6a: Solicitar turno
+--------------------------------------------------
+  [error] ✅
+    ENTRADA:            R0001 con 1 en Centro
+    OPERACIÓN:          solicitar_turno(U002, R0001, Centro)
+    RESULTADO ESPERADO: ValueError: Hay unidades disponibles: registre el préstamo
+    RESULTADO OBTENIDO: ValueError: Hay unidades disponibles: registre el préstamo
+  [normal] ✅
+    ENTRADA:            R0001 con 0 en Centro
+    OPERACIÓN:          solicitar_turno(U002, R0001, Centro)
+    RESULTADO ESPERADO: S0001
+    RESULTADO OBTENIDO: S0001
+  [normal] ✅
+    ENTRADA:            R0001 con 0 en Centro
+    OPERACIÓN:          solicitar_turno(U003, R0001, Centro)
+    RESULTADO ESPERADO: S0002
+    RESULTADO OBTENIDO: S0002
+  [normal] ✅
+    ENTRADA:            dos turnos
+    OPERACIÓN:          posición de U003 = obtener_cantidad_espera
+    RESULTADO ESPERADO: 2
+    RESULTADO OBTENIDO: 2
+  [error] ✅
+    ENTRADA:            U002 ya está en la fila
+    OPERACIÓN:          solicitar_turno(U002, R0001, Centro)
+    RESULTADO ESPERADO: ValueError: El usuario U002 ya esta en la fila de R0001
+    RESULTADO OBTENIDO: ValueError: El usuario U002 ya esta en la fila de R0001
+  [error] ✅
+    ENTRADA:            U999 no existe
+    OPERACIÓN:          solicitar_turno(U999, R0001, Centro)
+    RESULTADO ESPERADO: ValueError: Usuario U999 no existe
+    RESULTADO OBTENIDO: ValueError: Usuario U999 no existe
+  [error] ✅
+    ENTRADA:            R0099 no existe
+    OPERACIÓN:          solicitar_turno(U001, R0099, Centro)
+    RESULTADO ESPERADO: ValueError: Recurso R0099 no existe
+    RESULTADO OBTENIDO: ValueError: Recurso R0099 no existe
+  [error] ✅
+    ENTRADA:            sede 'Marte' no existe
+    OPERACIÓN:          solicitar_turno(U001, R0001, Marte)
+    RESULTADO ESPERADO: ValueError: Sede 'Marte' no existe
+    RESULTADO OBTENIDO: ValueError: Sede 'Marte' no existe
+  [error] ✅
+    ENTRADA:            U004 dado de baja
+    OPERACIÓN:          solicitar_turno(U004, R0001, Centro)
+    RESULTADO ESPERADO: ValueError: El usuario U004 esta inactivo
+    RESULTADO OBTENIDO: ValueError: El usuario U004 esta inactivo
+  [error] ✅
+    ENTRADA:            solicitudes rechazadas
+    OPERACIÓN:          la fila no cambió
+    RESULTADO ESPERADO: ['U002', 'U003']
+    RESULTADO OBTENIDO: ['U002', 'U003']
+  [menú] ✅
+    ENTRADA:            Turnos → 4: U002/R0003 dos veces y U001/R0001 (con unidades)
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: turno asignado, duplicado rechazado, 'Hay unidades disponibles'
+    RESULTADO OBTENIDO: turno asignado, duplicado rechazado, 'Hay unidades disponibles'
+✅ E6a: CORRECTO
+
+🧪 E6b: Ver siguiente turno sin sacarlo
+--------------------------------------------------
+  [límite] ✅
+    ENTRADA:            fila vacía
+    OPERACIÓN:          ver_siguiente(R0001)
+    RESULTADO ESPERADO: None
+    RESULTADO OBTENIDO: None
+  [límite] ✅
+    ENTRADA:            un solo elemento [U002]
+    OPERACIÓN:          ver_siguiente(R0001).usuario_codigo
+    RESULTADO ESPERADO: U002
+    RESULTADO OBTENIDO: U002
+  [normal] ✅
+    ENTRADA:            fila [U002, U003]
+    OPERACIÓN:          ver_siguiente dos veces → tamaño de la fila
+    RESULTADO ESPERADO: 2
+    RESULTADO OBTENIDO: 2
+  [normal] ✅
+    ENTRADA:            fila [U002, U003]
+    OPERACIÓN:          estado de S0001 tras consultar
+    RESULTADO ESPERADO: En espera
+    RESULTADO OBTENIDO: En espera
+  [menú] ✅
+    ENTRADA:            Turnos → 1 dos veces y luego 3
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: U002 aparece 2 veces como siguiente y sigue '1 personas esperando'
+    RESULTADO OBTENIDO: U002 aparece 2 veces como siguiente y sigue '1 personas esperando'
+✅ E6b: CORRECTO
+
+🧪 E6c: Atender la fila al devolver
+--------------------------------------------------
+  [límite] ✅
+    ENTRADA:            R0001 sin fila
+    OPERACIÓN:          registrar_devolucion('P0001')
+    RESULTADO ESPERADO: True
+    RESULTADO OBTENIDO: True
+  [normal] ✅
+    ENTRADA:            fila [U002, U003]
+    OPERACIÓN:          registrar_devolucion('P0002') devuelve
+    RESULTADO ESPERADO: P0003
+    RESULTADO OBTENIDO: P0003
+  [normal] ✅
+    ENTRADA:            asignación automática
+    OPERACIÓN:          usuario del préstamo P0003
+    RESULTADO ESPERADO: U002
+    RESULTADO OBTENIDO: U002
+  [normal] ✅
+    ENTRADA:            asignación automática
+    OPERACIÓN:          fila después
+    RESULTADO ESPERADO: ['U003']
+    RESULTADO OBTENIDO: ['U003']
+  [normal] ✅
+    ENTRADA:            asignación automática
+    OPERACIÓN:          disponibilidad (devuelta y vuelta a prestar)
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [normal] ✅
+    ENTRADA:            asignación automática
+    OPERACIÓN:          estado de S0001
+    RESULTADO ESPERADO: Otorgado
+    RESULTADO OBTENIDO: Otorgado
+  [normal] ✅
+    ENTRADA:            fila [U002 (inactivo), U003]
+    OPERACIÓN:          devolver P0001 → usuario asignado
+    RESULTADO ESPERADO: U003
+    RESULTADO OBTENIDO: U003
+  [normal] ✅
+    ENTRADA:            U002 inactivo saltado
+    OPERACIÓN:          estado de su solicitud S0001
+    RESULTADO ESPERADO: Cancelado
+    RESULTADO OBTENIDO: Cancelado
+  [límite] ✅
+    ENTRADA:            fila [U002 (inactivo)]
+    OPERACIÓN:          registrar_devolucion('P0001')
+    RESULTADO ESPERADO: True
+    RESULTADO OBTENIDO: True
+  [límite] ✅
+    ENTRADA:            nadie activo en la fila
+    OPERACIÓN:          disponibilidad
+    RESULTADO ESPERADO: 1
+    RESULTADO OBTENIDO: 1
+  [límite] ✅
+    ENTRADA:            nadie activo en la fila
+    OPERACIÓN:          fila después
+    RESULTADO ESPERADO: []
+    RESULTADO OBTENIDO: []
+  [menú] ✅
+    ENTRADA:            U001 presta R0003, U002 en fila, devolver P0001
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: 'Asignado automaticamente a U002 (siguiente en la fila): P0002'
+    RESULTADO OBTENIDO: 'Asignado automaticamente a U002 (siguiente en la fila): P0002'
+✅ E6c: CORRECTO
+
+🧪 E7: Categoría repetida
+--------------------------------------------------
+  [normal] ✅
+    ENTRADA:            C1 'Ingenieria'
+    OPERACIÓN:          registrar_categoria
+    RESULTADO ESPERADO: C1
+    RESULTADO OBTENIDO: C1
+  [error] ✅
+    ENTRADA:            C1 ya existe
+    OPERACIÓN:          registrar_categoria('C1', 'Repetida')
+    RESULTADO ESPERADO: ValueError: La categoria C1 ya existe
+    RESULTADO OBTENIDO: ValueError: La categoria C1 ya existe
+  [error] ✅
+    ENTRADA:            C1 rechazada
+    OPERACIÓN:          nombre de C1
+    RESULTADO ESPERADO: Ingenieria
+    RESULTADO OBTENIDO: Ingenieria
+  [error] ✅
+    ENTRADA:            C1 rechazada
+    OPERACIÓN:          obtener_cantidad()
+    RESULTADO ESPERADO: 1
+    RESULTADO OBTENIDO: 1
+  [normal] ✅
+    ENTRADA:            GestorCategorias
+    OPERACIÓN:          estructura de 'categorias'
+    RESULTADO ESPERADO: TablaHash
+    RESULTADO OBTENIDO: TablaHash
+  [límite] ✅
+    ENTRADA:            C9 no existe
+    OPERACIÓN:          obtener_categoria('C9')
+    RESULTADO ESPERADO: None
+    RESULTADO OBTENIDO: None
+  [menú] ✅
+    ENTRADA:            Categorías → C1 dos veces y buscar C1
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: 'Error: La categoria C1 ya existe' y 'C1: Ingenieria'
+    RESULTADO OBTENIDO: 'Error: La categoria C1 ya existe' y 'C1: Ingenieria'
+✅ E7: CORRECTO
+
+🧪 E8: Informes
+--------------------------------------------------
+  [normal] ✅
+    ENTRADA:            3 recursos y 1 préstamo
+    OPERACIÓN:          generar_reporte_uso()
+    RESULTADO ESPERADO: Total de préstamos registrados: 1
+    RESULTADO OBTENIDO: Total de préstamos registrados: 1
+  [normal] ✅
+    ENTRADA:            3 recursos y 1 préstamo
+    OPERACIÓN:          generar_reporte_inventario()
+    RESULTADO ESPERADO: GestorRecursos(libros=1, equipos=1, salas=1)
+    RESULTADO OBTENIDO: GestorRecursos(libros=1, equipos=1, salas=1)
+  [límite] ✅
+    ENTRADA:            sin gestores
+    OPERACIÓN:          GeneradorInformes().generar_reporte_uso()
+    RESULTADO ESPERADO: Sin datos
+    RESULTADO OBTENIDO: Sin datos
+  [menú] ✅
+    ENTRADA:            1 préstamo y luego Informes → 1 y 2
+    OPERACIÓN:          salida de main.py
+    RESULTADO ESPERADO: 'Total de préstamos registrados: 1' y 'GestorRecursos(...)'
+    RESULTADO OBTENIDO: 'Total de préstamos registrados: 1' y 'GestorRecursos(...)'
+✅ E8: CORRECTO
+
+🧪 E9: Usuario inactivo / recurso dado de baja
+--------------------------------------------------
+  [error] ✅
+    ENTRADA:            U001 inactivo
+    OPERACIÓN:          registrar_prestamo(U001, R0001, Centro)
+    RESULTADO ESPERADO: ValueError: El usuario U001 esta inactivo
+    RESULTADO OBTENIDO: ValueError: El usuario U001 esta inactivo
+  [error] ✅
+    ENTRADA:            préstamo rechazado
+    OPERACIÓN:          disponibilidad (no se descontó)
+    RESULTADO ESPERADO: 5
+    RESULTADO OBTENIDO: 5
+  [normal] ✅
+    ENTRADA:            U002 activo
+    OPERACIÓN:          registrar_prestamo(U002, R0001, Centro)
+    RESULTADO ESPERADO: P0001
+    RESULTADO OBTENIDO: P0001
+  [error] ✅
+    ENTRADA:            R0002 dado de baja
+    OPERACIÓN:          registrar_prestamo(U002, R0002, Centro)
+    RESULTADO ESPERADO: ValueError: El recurso R0002 esta dado de baja
+    RESULTADO OBTENIDO: ValueError: El recurso R0002 esta dado de baja
+  [error] ✅
+    ENTRADA:            préstamo rechazado
+    OPERACIÓN:          disponibilidad de R0002
+    RESULTADO ESPERADO: 2
+    RESULTADO OBTENIDO: 2
+✅ E9: CORRECTO
+
+🧪 E10: 500 recursos con existencias
+--------------------------------------------------
+  [normal] ✅
+    ENTRADA:            500 libros con 3 en Centro
+    OPERACIÓN:          cantidad de recursos
+    RESULTADO ESPERADO: 500
+    RESULTADO OBTENIDO: 500
+  [normal] ✅
+    ENTRADA:            500 libros con 3 en Centro
+    OPERACIÓN:          disponibilidad R0500
+    RESULTADO ESPERADO: 3
+    RESULTADO OBTENIDO: 3
+  [normal] ✅
+    ENTRADA:            tras crecer varias veces
+    OPERACIÓN:          disponibilidad R0001 (se copió)
+    RESULTADO ESPERADO: 3
+    RESULTADO OBTENIDO: 3
+  [límite] ✅
+    ENTRADA:            recurso 101 (antes fallaba)
+    OPERACIÓN:          disponibilidad R0101
+    RESULTADO ESPERADO: 3
+    RESULTADO OBTENIDO: 3
+  [límite] ✅
+    ENTRADA:            500 columnas usadas
+    OPERACIÓN:          capacidad de columnas >= 500
+    RESULTADO ESPERADO: True
+    RESULTADO OBTENIDO: True
+  [límite] ✅
+    ENTRADA:            R0001 ya registrado
+    OPERACIÓN:          registrar_recurso('R0001') otra vez → columna
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [límite] ✅
+    ENTRADA:            R0001 ya registrado
+    OPERACIÓN:          las columnas no crecieron
+    RESULTADO ESPERADO: 800
+    RESULTADO OBTENIDO: 800
+  [normal] ✅
+    ENTRADA:            R0101 con 3
+    OPERACIÓN:          prestar R0101 → disponibilidad
+    RESULTADO ESPERADO: 2
+    RESULTADO OBTENIDO: 2
+✅ E10: CORRECTO
+
+🧪 E11: Deshacer préstamo asignado desde la fila
+--------------------------------------------------
+  [normal] ✅
+    ENTRADA:            devolución con fila [U002, U003]
+    OPERACIÓN:          operaciones en la pila (préstamo, devolución, automático)
+    RESULTADO ESPERADO: 3
+    RESULTADO OBTENIDO: 3
+  [normal] ✅
+    ENTRADA:            deshacer el préstamo automático P0002
+    OPERACIÓN:          fila
+    RESULTADO ESPERADO: ['U002', 'U003']
+    RESULTADO OBTENIDO: ['U002', 'U003']
+  [normal] ✅
+    ENTRADA:            deshacer el préstamo automático P0002
+    OPERACIÓN:          estado de S0001
+    RESULTADO ESPERADO: En espera
+    RESULTADO OBTENIDO: En espera
+  [normal] ✅
+    ENTRADA:            deshacer el préstamo automático P0002
+    OPERACIÓN:          ¿P0002 existe?
+    RESULTADO ESPERADO: None
+    RESULTADO OBTENIDO: None
+  [normal] ✅
+    ENTRADA:            deshacer el préstamo automático P0002
+    OPERACIÓN:          disponibilidad
+    RESULTADO ESPERADO: 1
+    RESULTADO OBTENIDO: 1
+  [normal] ✅
+    ENTRADA:            deshacer otra vez
+    OPERACIÓN:          estado de P0001 (devolución revertida)
+    RESULTADO ESPERADO: Activo
+    RESULTADO OBTENIDO: Activo
+  [normal] ✅
+    ENTRADA:            deshacer otra vez
+    OPERACIÓN:          disponibilidad
+    RESULTADO ESPERADO: 0
+    RESULTADO OBTENIDO: 0
+  [normal] ✅
+    ENTRADA:            deshacer otra vez
+    OPERACIÓN:          fila (sin cambios)
+    RESULTADO ESPERADO: ['U002', 'U003']
+    RESULTADO OBTENIDO: ['U002', 'U003']
+  [normal] ✅
+    ENTRADA:            atender_siguiente_turno con fila [U002, U003]
+    OPERACIÓN:          fila
+    RESULTADO ESPERADO: ['U003']
+    RESULTADO OBTENIDO: ['U003']
+  [normal] ✅
+    ENTRADA:            deshacer ese préstamo
+    OPERACIÓN:          fila (U002 vuelve al frente)
+    RESULTADO ESPERADO: ['U002', 'U003']
+    RESULTADO OBTENIDO: ['U002', 'U003']
+  [límite] ✅
+    ENTRADA:            deshacer un préstamo que no vino de la fila
+    OPERACIÓN:          fila
+    RESULTADO ESPERADO: ['U002']
+    RESULTADO OBTENIDO: ['U002']
+  [límite] ✅
+    ENTRADA:            pila vacía
+    OPERACIÓN:          deshacer()
+    RESULTADO ESPERADO: False
+    RESULTADO OBTENIDO: False
+✅ E11: CORRECTO
+
+======================================================================
+RESUMEN
+======================================================================
+✅ CORRECTO: E1  Listar préstamos activos
+✅ CORRECTO: E2  ValueError capturados en el menú
+✅ CORRECTO: E3  Préstamo según unidades de la sede
+✅ CORRECTO: E4  Inventario en préstamo/devolución/deshacer
+✅ CORRECTO: E5  Devolución inexistente
+✅ CORRECTO: E6a Solicitar turno
+✅ CORRECTO: E6b Ver siguiente sin sacar
+✅ CORRECTO: E6c Atender la fila al devolver
+✅ CORRECTO: E7  Categoría repetida
+✅ CORRECTO: E8  Informes
+✅ CORRECTO: E9  Usuario inactivo / recurso de baja
+✅ CORRECTO: E10 500 recursos en inventario
+✅ CORRECTO: E11 Deshacer préstamo desde la fila
+
+Total: 13/13 pruebas aprobadas
+
+🎉 ¡TODAS LAS PRUEBAS PASARON!

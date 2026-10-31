@@ -1,0 +1,52 @@
+
+======================================================================
+PRUEBAS BÁSICAS — ENTREGA 1
+======================================================================
+
+🧪 TEST 1: Vector Dinámico
+--------------------------------------------------
+✅ Vector Dinámico: CORRECTO
+
+🧪 TEST 2: Lista Simple
+--------------------------------------------------
+✅ Lista Simple: CORRECTO
+
+🧪 TEST 3: Lista Doble
+--------------------------------------------------
+✅ Lista Doble: CORRECTO
+
+🧪 TEST 4: Pila (LIFO)
+--------------------------------------------------
+✅ Pila: CORRECTO
+
+🧪 TEST 5: Cola FIFO
+--------------------------------------------------
+✅ Cola FIFO: CORRECTO
+
+🧪 TEST 6: Herencia (Recurso → Libro, Equipo, Sala)
+--------------------------------------------------
+✅ Herencia: CORRECTO
+
+🧪 TEST 7: M01 - Gestor de Usuarios
+--------------------------------------------------
+✅ Gestor de Usuarios: CORRECTO
+
+🧪 TEST 8: M02 - Gestor de Recursos
+--------------------------------------------------
+✅ Gestor de Recursos: CORRECTO
+
+======================================================================
+RESUMEN
+======================================================================
+✅ CORRECTO: Vector Dinámico
+✅ CORRECTO: Lista Simple
+✅ CORRECTO: Lista Doble
+✅ CORRECTO: Pila
+✅ CORRECTO: Cola FIFO
+✅ CORRECTO: Herencia
+✅ CORRECTO: Gestor Usuarios (M01)
+✅ CORRECTO: Gestor Recursos (M02)
+
+Total: 8/8 pruebas aprobadas
+
+🎉 ¡TODAS LAS PRUEBAS PASARON!

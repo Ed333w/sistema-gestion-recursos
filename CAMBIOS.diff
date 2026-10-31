@@ -1,0 +1,1300 @@
+--- a/main.py
++++ b/main.py
+@@ -11,6 +11,7 @@
+ import sys
+ from modulos import (GestorUsuarios, GestorRecursos, GestorPrestamos, GestorTurnos,
+                      GestorCategorias, GeneradorInformes, GestorInventario, SistemaInteligente)
++from modulos.M03_prestamos import SinUnidadesError
+ from estructuras import VectorDinamico, ListaSimple, ListaDoble, Pila, ColaFIFO
+ 
+ 
+@@ -51,7 +52,7 @@
+     print("     Registrar, devolver, deshacer, historial")
+     print()
+     print("  5. Gestion de Turnos (M04)")
+-    print("     Ver turnos y fila de espera")
++    print("     Solicitar turno, ver turnos y fila de espera")
+     print()
+     print("  6. Gestion de Categorias (M05)")
+     print("     Registrar y buscar categorías")
+@@ -251,8 +252,13 @@
+         elif opcion == "1":
+             nombre = input("\nNombre: ")
+             email = input("Email: ")
+-            codigo = gestor.registrar(nombre, email)
+-            print(f"\n Usuario registrado: {codigo}")
++            # registrar() lanza ValueError si nombre o email están vacíos;
++            # sin el try el programa se cerraba con un Traceback.
++            try:
++                codigo = gestor.registrar(nombre, email)
++                print(f"\n Usuario registrado: {codigo}")
++            except ValueError as e:
++                print(f"\n Error: {e}")
+ 
+         elif opcion == "2":
+             usuarios = gestor.listar_todos()
+@@ -345,6 +351,17 @@
+         pausa()
+ 
+ 
++def solicitar_turno_menu(gestor_turnos, usuario_cod, recurso_cod, sede):
++    """Pide turno y muestra la posición. Lo usan los menús de Turnos y de Préstamos."""
++    try:
++        codigo = gestor_turnos.solicitar_turno(usuario_cod, recurso_cod, sede)
++        # La solicitud entra al final, así que su posición es el tamaño de la fila
++        posicion = gestor_turnos.obtener_cantidad_espera(recurso_cod)
++        print(f"\n Turno {codigo} asignado, posicion {posicion} en la fila")
++    except ValueError as e:
++        print(f"\n Error: {e}")
++
++
+ def gestion_prestamos(gestor_prestamos, gestor_usuarios, gestor_recursos):
+     """Submenu para gestion de prestamos."""
+     limpiar_pantalla()
+@@ -378,21 +395,45 @@
+             try:
+                 codigo_prestamo = gestor_prestamos.registrar_prestamo(usuario_cod, recurso_cod, sede)
+                 print(f"\n Prestamo registrado: {codigo_prestamo}")
+-            except Exception as e:
++            except SinUnidadesError as e:
++                # Sin unidades en esa sede: se ofrece entrar a la fila de espera (RF3).
++                # Va antes de "except ValueError" porque SinUnidadesError es un ValueError.
++                print(f"\n Error: {e}")
++                if gestor_prestamos.gestor_turnos is not None:
++                    try:
++                        respuesta = input("¿Desea pedir turno en la fila de espera? (s/n): ")
++                    except EOFError:
++                        respuesta = "n"
++                    if respuesta.strip().lower() == "s":
++                        solicitar_turno_menu(gestor_prestamos.gestor_turnos,
++                                             usuario_cod, recurso_cod, sede)
++            except ValueError as e:
+                 print(f"\n Error: {e}")
+ 
+         elif opcion == "2":
+             codigo_prestamo = input("\nCodigo prestamo: ")
+             try:
+-                gestor_prestamos.registrar_devolucion(codigo_prestamo)
+-                print(f"\n Devolucion registrada")
+-            except Exception as e:
++                resultado = gestor_prestamos.registrar_devolucion(codigo_prestamo)
++                # registrar_devolucion indica el fallo devolviendo False (no lanza
++                # error); antes no se revisaba y siempre decía "registrada".
++                if not resultado:
++                    print(f"\n Error: El prestamo {codigo_prestamo} no existe o ya fue devuelto")
++                else:
++                    print(f"\n Devolucion registrada")
++                    # Si devuelve un código, la unidad pasó al siguiente de la fila
++                    if isinstance(resultado, str):
++                        asignado = gestor_prestamos.buscar_prestamo(resultado)
++                        print(f" Asignado automaticamente a {asignado.usuario_codigo} "
++                              f"(siguiente en la fila): {resultado}")
++            except ValueError as e:
+                 print(f"\n Error: {e}")
+ 
+         elif opcion == "3":
+-            prestamos = gestor_prestamos.listar_activos()
+-            print(f"\nTotal prestamos activos: {len(prestamos)}\n")
+-            for p in prestamos:
++            # listar_activos devuelve un VectorDinamico (no una list)
++            activos = gestor_prestamos.listar_activos()
++            print(f"\nTotal prestamos activos: {activos.obtener_tamaño()}\n")
++            for i in range(activos.obtener_tamaño()):
++                p = activos.obtener(i)
+                 print(f"  {p.codigo}: {p.usuario_codigo} -> {p.recurso_codigo} [{p.sede}]")
+ 
+         elif opcion == "4":
+@@ -430,10 +471,14 @@
+                 print(f"\n Prestamo {codigo} no encontrado")
+ 
+         elif opcion == "8":
+-            if gestor_prestamos.deshacer():
+-                print(f"\n Operacion deshecha (Pila LIFO)")
+-            else:
+-                print(f"\n  No hay operaciones para deshacer")
++            # deshacer() puede lanzar ValueError si ya no hay unidad para revertir una devolución
++            try:
++                if gestor_prestamos.deshacer():
++                    print(f"\n Operacion deshecha (Pila LIFO)")
++                else:
++                    print(f"\n  No hay operaciones para deshacer")
++            except ValueError as e:
++                print(f"\n Error: {e}")
+ 
+         pausa()
+ 
+@@ -459,6 +504,7 @@
+         print("\n1. Ver siguiente turno")
+         print("2. Ver fila de espera (por recurso)")
+         print("3. Ver cantidad en espera")
++        print("4. Solicitar turno")
+         print("0. Volver")
+         print()
+ 
+@@ -471,9 +517,10 @@
+             break
+         elif opcion == "1":
+             recurso = input("\nCodigo recurso: ")
+-            siguiente = gestor_turnos.obtener_siguiente(recurso)
++            # ver_siguiente solo consulta; obtener_siguiente sacaba al usuario de la fila
++            siguiente = gestor_turnos.ver_siguiente(recurso)
+             if siguiente:
+-                print(f"\n Siguiente en fila: {siguiente.usuario_codigo}")
++                print(f"\n Siguiente en fila: {siguiente.usuario_codigo} (turno {siguiente.codigo})")
+             else:
+                 print(f"\n  No hay nadie en fila para {recurso}")
+         elif opcion == "2":
+@@ -486,6 +533,12 @@
+             recurso = input("\nCodigo recurso: ")
+             cantidad = gestor_turnos.obtener_cantidad_espera(recurso)
+             print(f"\n{cantidad} personas esperando por {recurso}")
++        elif opcion == "4":
++            # Antes no había forma de entrar a la fila desde el programa (RF3)
++            usuario_cod = input("\nCodigo usuario: ")
++            recurso_cod = input("Codigo recurso: ")
++            sede = input("Sede (Centro/Norte/Sur): ")
++            solicitar_turno_menu(gestor_turnos, usuario_cod, recurso_cod, sede)
+ 
+         pausa()
+ 
+@@ -513,8 +566,12 @@
+         elif opcion == "1":
+             codigo = input("\nCodigo categoria: ")
+             nombre = input("Nombre categoria: ")
+-            gestor_categorias.registrar_categoria(codigo, nombre)
+-            print(f"\n Categoria registrada: {codigo}")
++            # registrar_categoria lanza ValueError si el código ya existe (RF7)
++            try:
++                gestor_categorias.registrar_categoria(codigo, nombre)
++                print(f"\n Categoria registrada: {codigo}")
++            except ValueError as e:
++                print(f"\n Error: {e}")
+         elif opcion == "2":
+             codigo = input("\nCodigo categoria: ")
+             cat = gestor_categorias.obtener_categoria(codigo)
+@@ -622,14 +679,23 @@
+     # Crear gestores (M01-M08)
+     gestor_usuarios = GestorUsuarios()
+     gestor_recursos = GestorRecursos(num_sedes=3)
+-    gestor_turnos = GestorTurnos()
++    # GestorTurnos recibe usuarios y recursos para validar "Solicitar turno"
++    gestor_turnos = GestorTurnos(
++        gestor_usuarios=gestor_usuarios,
++        gestor_recursos=gestor_recursos
++    )
+     gestor_prestamos = GestorPrestamos(
+         gestor_turnos=gestor_turnos,
+         gestor_usuarios=gestor_usuarios,
+         gestor_recursos=gestor_recursos
+     )
+     gestor_categorias = GestorCategorias()
+-    generador_informes = GeneradorInformes(gestor_usuarios, gestor_recursos)
++    # Argumentos con nombre: antes se pasaba (gestor_usuarios, gestor_recursos) por
++    # posición y el reporte de uso contaba recursos y el de inventario mostraba usuarios.
++    generador_informes = GeneradorInformes(
++        gestor_recursos=gestor_recursos,
++        gestor_prestamos=gestor_prestamos
++    )
+     sistema_inteligente = SistemaInteligente()
+ 
+     # Pre-cargar datos
+--- a/modulos/M03_prestamos/__init__.py
++++ b/modulos/M03_prestamos/__init__.py
+@@ -1,4 +1,4 @@
+ """M03 — PRÉSTAMOS Y DEVOLUCIONES"""
+ from .prestamo import Prestamo
+-from .gestor_prestamos import GestorPrestamos
+-__all__ = ['Prestamo', 'GestorPrestamos']
++from .gestor_prestamos import GestorPrestamos, SinUnidadesError
++__all__ = ['Prestamo', 'GestorPrestamos', 'SinUnidadesError']
+--- a/modulos/M03_prestamos/gestor_prestamos.py
++++ b/modulos/M03_prestamos/gestor_prestamos.py
+@@ -8,15 +8,28 @@
+     return int(str(codigo)[1:])
+ 
+ 
++class SinUnidadesError(ValueError):
++    """
++    No quedan unidades del recurso en la sede pedida.
++
++    Es un ValueError (se captura igual que los demás errores de datos), pero con
++    nombre propio para que el menú distinga este caso y ofrezca pedir turno.
++    """
++
++
+ class GestorPrestamos:
+     """Administra los préstamos del sistema."""
+ 
+-    def __init__(self, gestor_turnos=None, exclusivo=True, gestor_usuarios=None, gestor_recursos=None):
++    def __init__(self, gestor_turnos=None, gestor_usuarios=None, gestor_recursos=None):
+         """
+         gestor_turnos: GestorTurnos (M04) opcional, para integrar turnos.
+-        exclusivo: si True, un recurso no puede tener dos préstamos activos a la vez.
+         gestor_usuarios: GestorUsuarios (M01) opcional, para validar usuarios.
+-        gestor_recursos: GestorRecursos (M02) opcional, para validar recursos.
++        gestor_recursos: GestorRecursos (M02) opcional, para validar recursos
++                         y descontar/sumar unidades en la matriz de inventario.
++
++        Se eliminó el parámetro `exclusivo`: permitía un solo préstamo por recurso
++        en todo el sistema. Ahora la disponibilidad la decide el inventario de
++        cada sede (RQF-009 / RQF-011).
+         """
+         self.prestamos = VectorDinamico(capacidad_inicial=50)
+         self.historial_simple = ListaSimple()
+@@ -26,7 +39,6 @@
+         self.gestor_turnos = gestor_turnos
+         self.gestor_usuarios = gestor_usuarios
+         self.gestor_recursos = gestor_recursos
+-        self.exclusivo = exclusivo
+ 
+         # Índices para O(1) promedio en búsquedas
+         self.indice_codigo = TablaHash(211)      # código -> Prestamo
+@@ -50,28 +62,42 @@
+             self.recursos_activos.insertar(p.recurso_codigo, n - 1)
+ 
+     def recurso_prestado(self, recurso_codigo):
+-        """¿Un recurso está prestado (en modo exclusivo)?"""
++        """
++        ¿El recurso tiene al menos un préstamo activo (en cualquier sede)?
++
++        Solo informativo: ya NO bloquea nuevos préstamos (eso lo decide el inventario).
++        """
+         return self.recursos_activos.buscar(recurso_codigo) is not None
+ 
+     def registrar_prestamo(self, usuario_codigo, recurso_codigo, sede,
+                            fecha_prestamo=None, dias_limite=14, _solicitud=None):
+         """
+-        Registra un nuevo préstamo.
++        Registra un nuevo préstamo y descuenta 1 unidad de esa sede.
++
++        Returns:
++            str: código del préstamo (ej: "P0001"). Nunca devuelve None.
+ 
+         Raises:
+-            ValueError: Si usuario, recurso o sede no existen (cuando los gestores están disponibles)
++            ValueError: usuario inexistente o inactivo, recurso inexistente o
++                        dado de baja, sede inexistente.
++            SinUnidadesError (subclase de ValueError): la sede no tiene unidades.
+         """
+         # Validar usuario si gestor_usuarios está disponible
+         if self.gestor_usuarios:
+             usuario = self.gestor_usuarios.buscar_por_codigo(usuario_codigo)
+             if usuario is None:
+                 raise ValueError(f"Usuario {usuario_codigo} no existe")
++            # Un usuario dado de baja no puede recibir préstamos
++            if not usuario.es_activo():
++                raise ValueError(f"El usuario {usuario_codigo} esta inactivo")
+ 
+         # Validar recurso si gestor_recursos está disponible
+         if self.gestor_recursos:
+             recurso = self.gestor_recursos.buscar_por_codigo(recurso_codigo)
+             if recurso is None:
+                 raise ValueError(f"Recurso {recurso_codigo} no existe")
++            if recurso.obtener_estado() == "Dado de baja":
++                raise ValueError(f"El recurso {recurso_codigo} esta dado de baja")
+ 
+             # Validar que la sede exista (buscando en la lista de sedes)
+             sedes = self.gestor_recursos.listar_sedes()
+@@ -79,8 +105,11 @@
+             if not sede_existe:
+                 raise ValueError(f"Sede '{sede}' no existe")
+ 
+-        if self.exclusivo and self.recurso_prestado(recurso_codigo):
+-            return None
++            # La disponibilidad se decide por el inventario de la sede (RQF-011),
++            # no por si el recurso ya está prestado en otra parte. Se descuenta
++            # al final de las validaciones para no restar una unidad y luego fallar.
++            if not self.gestor_recursos.decrementar_disponibilidad(recurso_codigo, sede):
++                raise SinUnidadesError(f"Sin unidades disponibles de {recurso_codigo} en {sede}")
+ 
+         self.contador_codigos += 1
+         codigo = f"P{self.contador_codigos:04d}"
+@@ -107,13 +136,32 @@
+         return codigo
+ 
+     def registrar_devolucion(self, codigo_prestamo):
+-        """Registra la devolución de un préstamo."""
++        """
++        Registra la devolución de un préstamo, suma 1 unidad a su sede y, si hay
++        fila de espera para ese recurso, se lo asigna al siguiente (RQF-018).
++
++        Returns (CAMBIO: antes solo True/False):
++            False: el préstamo no existe o ya fue devuelto (no se hace nada).
++            True:  devolución registrada; nadie esperaba el recurso.
++            str:   devolución registrada y la unidad se asignó automáticamente;
++                   es el código del préstamo nuevo (ej: "P0003").
++            Los dos casos de éxito son verdaderos, así que `if resultado:` sigue
++            sirviendo para saber si la devolución se hizo.
++
++        Deshacer: si hubo asignación automática quedan DOS operaciones en la pila
++        (la devolución y luego el préstamo automático). El primer deshacer revierte
++        la asignación (el usuario vuelve al frente de la fila) y el segundo, la devolución.
++        """
+         p = self.indice_codigo.buscar(codigo_prestamo)
+         if p is None or p.estado != "Activo":
+             return False
+         p.devolver()
+         self._desindexar_activo(p)
+ 
++        # La unidad vuelve a la sede donde se prestó (RQF-011)
++        if self.gestor_recursos:
++            self.gestor_recursos.incrementar_disponibilidad(p.recurso_codigo, p.sede)
++
+         # Desregistrar el préstamo del usuario
+         if self.gestor_usuarios:
+             usuario = self.gestor_usuarios.buscar_por_codigo(p.usuario_codigo)
+@@ -121,10 +169,31 @@
+                 usuario.devolver_prestamo(codigo_prestamo)
+ 
+         self.pila_deshacer.push({'operacion': 'registrar_devolucion', 'prestamo': p})
++
++        # Atender la fila apenas queda una unidad libre (RF3 / RQF-018)
++        if self.gestor_turnos and self.gestor_turnos.obtener_cantidad_espera(p.recurso_codigo) > 0:
++            try:
++                asignado = self.atender_siguiente_turno(p.recurso_codigo, p.sede)
++            except ValueError:
++                # La devolución ya quedó hecha; si la asignación falla, el usuario
++                # vuelve al frente de la fila (lo hace atender_siguiente_turno).
++                asignado = None
++            if asignado:
++                return asignado
+         return True
+ 
+     def deshacer(self):
+-        """Deshace la última operación registrada."""
++        """
++        Deshace la última operación registrada (Pila LIFO, RQF-015).
++
++        - Deshacer préstamo: la unidad vuelve a la sede (+1). Si el préstamo salió
++          de la fila de espera, el usuario vuelve al PRIMER lugar de la fila.
++        - Deshacer devolución: la unidad se vuelve a descontar (-1).
++
++        Raises:
++            ValueError: si al deshacer una devolución ya no hay unidad para
++                        descontar; la operación vuelve a la pila sin cambios.
++        """
+         op = self.pila_deshacer.pop()
+         if op is None:
+             return False
+@@ -133,6 +202,9 @@
+         if op['operacion'] == 'registrar_prestamo':
+             if p.estado == "Activo":
+                 self._desindexar_activo(p)
++                # Solo si seguía activo: si ya estaba devuelto, la unidad ya volvió.
++                if self.gestor_recursos:
++                    self.gestor_recursos.incrementar_disponibilidad(p.recurso_codigo, p.sede)
+             self.indice_codigo.eliminar(p.codigo)
+ 
+             # Desregistrar del usuario
+@@ -152,7 +224,19 @@
+                 self.historial_doble.agregar_al_final(x)
+             if _num(p.codigo) == self.contador_codigos:
+                 self.contador_codigos -= 1
++
++            # E11: si el préstamo se asignó desde la fila, el usuario no pierde su
++            # turno: vuelve al frente y la solicitud queda otra vez "En espera".
++            solicitud = op.get('solicitud')
++            if solicitud is not None and self.gestor_turnos:
++                self.gestor_turnos.reinsertar_al_frente(solicitud)
+         elif op['operacion'] == 'registrar_devolucion':
++            # Se descuenta primero porque es lo único que puede fallar (si alguien
++            # cambió el inventario a mano); así no queda el préstamo a medio revertir.
++            if self.gestor_recursos and not self.gestor_recursos.decrementar_disponibilidad(p.recurso_codigo, p.sede):
++                self.pila_deshacer.push(op)
++                raise ValueError(f"No se puede deshacer la devolucion de {p.codigo}: "
++                                 f"no quedan unidades de {p.recurso_codigo} en {p.sede}")
+             p.reactivar()
+             self._indexar_activo(p)
+ 
+@@ -164,16 +248,49 @@
+         return True
+ 
+     def atender_siguiente_turno(self, recurso_codigo, sede):
+-        """Entrega el recurso a quien sigue en la cola."""
++        """
++        Entrega una unidad del recurso en `sede` a quien sigue en la fila.
++
++        Salta (y cancela) las solicitudes de usuarios que ya no están activos.
++        Si el préstamo no se puede registrar, la solicitud vuelve al frente de
++        la fila y se relanza el ValueError.
++
++        Returns:
++            str: código del préstamo creado, o None si la fila quedó vacía.
++        """
+         if self.gestor_turnos is None:
+             raise ValueError("GestorPrestamos no tiene GestorTurnos asociado")
+-        if self.exclusivo and self.recurso_prestado(recurso_codigo):
+-            return None
+-        sol = self.gestor_turnos.obtener_siguiente(recurso_codigo)
+-        if sol is None:
+-            return None
+-        return self.registrar_prestamo(sol.usuario_codigo, recurso_codigo, sede,
+-                                       _solicitud=sol)
++        while True:
++            sol = self.gestor_turnos.obtener_siguiente(recurso_codigo)
++            if sol is None:
++                return None
++            if self.gestor_usuarios:
++                usuario = self.gestor_usuarios.buscar_por_codigo(sol.usuario_codigo)
++                if usuario is None or not usuario.es_activo():
++                    sol.cancelar()
++                    continue
++            try:
++                return self.registrar_prestamo(sol.usuario_codigo, recurso_codigo, sede,
++                                               _solicitud=sol)
++            except ValueError:
++                # obtener_siguiente() ya lo sacó de la fila; sin esto perdería el turno
++                self.gestor_turnos.reinsertar_al_frente(sol)
++                raise
++
++    def listar_activos(self):
++        """
++        Préstamos con estado "Activo". O(n).
++
++        Recorre el VectorDinamico por índice y devuelve otro VectorDinamico, para
++        no construir una list de Python (regla del curso). Se usa con
++        obtener_tamaño() y obtener(i).
++        """
++        activos = VectorDinamico(capacidad_inicial=10)
++        for i in range(self.prestamos.obtener_tamaño()):
++            p = self.prestamos.obtener(i)
++            if p.estado == "Activo":
++                activos.agregar(p)
++        return activos
+ 
+     def buscar_prestamo(self, codigo):
+         """Busca por código — O(1) promedio con tabla hash."""
+--- a/modulos/M04_turnos/gestor_turnos.py
++++ b/modulos/M04_turnos/gestor_turnos.py
+@@ -6,10 +6,19 @@
+ class GestorTurnos:
+     """Gestiona solicitudes de turnos respetando orden FIFO."""
+ 
+-    def __init__(self):
++    def __init__(self, gestor_usuarios=None, gestor_recursos=None):
++        """
++        gestor_usuarios: GestorUsuarios (M01) opcional, para validar al solicitar turno.
++        gestor_recursos: GestorRecursos (M02) opcional, para validar recurso, sede e inventario.
++
++        Se reciben igual que en GestorPrestamos (opcionales), así GestorTurnos()
++        sin argumentos sigue funcionando.
++        """
+         self.colas = TablaHash(211)  # {recurso_codigo: ColaFIFO de Solicitudes}
+         self.solicitudes = TablaHash(211)  # {codigo_solicitud: Solicitud}
+         self.contador = 0
++        self.gestor_usuarios = gestor_usuarios
++        self.gestor_recursos = gestor_recursos
+ 
+     @staticmethod
+     def _par(usuario_codigo, recurso_codigo):
+@@ -30,8 +39,80 @@
+         self.solicitudes.insertar(codigo, solicitud)
+         return codigo
+ 
++    def esta_en_espera(self, usuario_codigo, recurso_codigo):
++        """¿El usuario ya tiene turno en la fila de ese recurso? O(n), n = tamaño de la fila."""
++        cola = self.colas.buscar(recurso_codigo)
++        if cola is None:
++            return False
++        for sol in cola.recorrer():
++            if sol.usuario_codigo == usuario_codigo:
++                return True
++        return False
++
++    def solicitar_turno(self, usuario_codigo, recurso_codigo, sede):
++        """
++        Pide turno en la fila de espera de un recurso (RF3 / RQF-016).
++
++        A diferencia de encolar(), valida los datos antes de entrar a la fila.
++        Solo se puede pedir turno si la sede NO tiene unidades: si las tiene,
++        lo correcto es registrar el préstamo directamente.
++
++        Returns:
++            str: código de la solicitud (ej: "S0001"). Como entra al final, su
++                 posición en la fila es obtener_cantidad_espera(recurso_codigo).
++
++        Raises:
++            ValueError: usuario inexistente o inactivo, recurso inexistente o
++                        dado de baja, sede inexistente, hay unidades disponibles,
++                        o el usuario ya está en la fila de ese recurso.
++
++        Complejidad: O(n) por la verificación de duplicados (n = personas en la fila).
++        """
++        if self.gestor_usuarios:
++            usuario = self.gestor_usuarios.buscar_por_codigo(usuario_codigo)
++            if usuario is None:
++                raise ValueError(f"Usuario {usuario_codigo} no existe")
++            if not usuario.es_activo():
++                raise ValueError(f"El usuario {usuario_codigo} esta inactivo")
++
++        if self.gestor_recursos:
++            recurso = self.gestor_recursos.buscar_por_codigo(recurso_codigo)
++            if recurso is None:
++                raise ValueError(f"Recurso {recurso_codigo} no existe")
++            if recurso.obtener_estado() == "Dado de baja":
++                raise ValueError(f"El recurso {recurso_codigo} esta dado de baja")
++            # Misma validación de sede que GestorPrestamos.registrar_prestamo
++            sede_existe = any(s.nombre == sede for s in self.gestor_recursos.listar_sedes())
++            if not sede_existe:
++                raise ValueError(f"Sede '{sede}' no existe")
++            # La fila es para cuando no hay unidades (RQF-016); con unidades se presta.
++            if self.gestor_recursos.obtener_disponibilidad(recurso_codigo, sede) > 0:
++                raise ValueError("Hay unidades disponibles: registre el préstamo")
++
++        if self.esta_en_espera(usuario_codigo, recurso_codigo):
++            raise ValueError(f"El usuario {usuario_codigo} ya esta en la fila de {recurso_codigo}")
++
++        return self.encolar(usuario_codigo, recurso_codigo)
++
++    def ver_siguiente(self, recurso_codigo):
++        """
++        Consulta quién sigue en la fila SIN sacarlo. O(1).
++
++        obtener_siguiente() desencola y marca la solicitud como "Otorgado"; si el
++        menú lo usa solo para mirar, el usuario pierde su turno. Por eso aquí se
++        usa ColaFIFO.frente(), que no modifica la cola.
++        """
++        cola = self.colas.buscar(recurso_codigo)
++        if cola is None:
++            return None
++        return cola.frente()
++
+     def obtener_siguiente(self, recurso_codigo):
+-        """Obtiene siguiente solicitud en cola. O(1)."""
++        """
++        Saca (desencola) la siguiente solicitud y la marca "Otorgado". O(1).
++
++        Solo debe usarse al asignar el recurso; para consultar usar ver_siguiente().
++        """
+         cola = self.colas.buscar(recurso_codigo)
+         if cola is None or cola.esta_vacia():
+             return None
+--- a/modulos/M05_categorias/gestor_categorias.py
++++ b/modulos/M05_categorias/gestor_categorias.py
+@@ -1,6 +1,6 @@
+ """Gestor de Categorías — CLASE PRINCIPAL DE M05"""
+ 
+-from estructuras import ArbolBinario
++from estructuras import ArbolBinario, TablaHash
+ 
+ 
+ class Categoria:
+@@ -34,7 +34,9 @@
+     def __init__(self):
+         """Inicializa gestor de categorías."""
+         self.arbol = ArbolBinario()
+-        self.categorias = {}
++        # Antes era un dict de Python; el curso exige estructuras propias y
++        # la TablaHash permite comprobar en O(1) promedio si un código ya existe.
++        self.categorias = TablaHash(211)  # código -> Categoria
+ 
+     def registrar_categoria(self, codigo, nombre):
+         """
+@@ -47,10 +49,17 @@
+         Returns:
+             str: código de la categoría
+ 
++        Raises:
++            ValueError: si el código ya está registrado (RF7: sin repetidos)
++
+         Complejidad: O(log n) promedio
+         """
++        # Sin esta validación, insertar() de la TablaHash actualiza el valor y la
++        # segunda categoría C1 sobrescribía el nombre de la primera.
++        if self.categorias.contiene(codigo):
++            raise ValueError(f"La categoria {codigo} ya existe")
+         cat = Categoria(codigo, nombre)
+-        self.categorias[codigo] = cat
++        self.categorias.insertar(codigo, cat)
+         # Insertar en árbol con criterio de comparación lexicográfica
+         self.arbol.insertar(codigo, lambda nuevo, existente: -1 if nuevo < existente else (1 if nuevo > existente else 0))
+         return codigo
+@@ -65,10 +74,10 @@
+         Returns:
+             Categoria o None
+ 
+-        Complejidad: O(1)
++        Complejidad: O(1) promedio
+         """
+-        return self.categorias.get(codigo)
++        return self.categorias.buscar(codigo)
+ 
+     def obtener_cantidad(self):
+         """Obtiene cantidad de categorías registradas."""
+-        return len(self.categorias)
++        return self.categorias.obtener_cantidad()
+--- a/modulos/M07_inventario/gestor_inventario.py
++++ b/modulos/M07_inventario/gestor_inventario.py
+@@ -73,12 +73,40 @@
+         self.contador_recursos = 0
+         self.contador_sedes = 0
+ 
++    def _redimensionar_columnas(self):
++        """
++        Duplica el número de columnas de la matriz (misma estrategia que VectorDinamico).
++
++        Se crea una matriz nueva con el doble de columnas y se copian las
++        cantidades celda por celda; las columnas nuevas quedan en 0.
++
++        Complejidad: O(sedes × recursos) cuando ocurre. Como la capacidad se
++        duplica, ocurre pocas veces (log n) y el registro queda en O(1) amortizado.
++        """
++        nueva_capacidad = max(1, self.num_recursos * 2)
++        # Arreglo de bajo nivel de tamaño fijo por fila, igual que el que usa
++        # VectorDinamico._redimensionar; no es una colección que crece con append.
++        nueva_matriz = [[0] * nueva_capacidad for _ in range(self.num_sedes)]
++        for i in range(self.num_sedes):
++            for j in range(self.contador_recursos):
++                nueva_matriz[i][j] = self.matriz[i][j]
++        self.matriz = nueva_matriz
++        self.num_recursos = nueva_capacidad
++
+     def registrar_recurso(self, codigo_recurso, nombre_recurso):
+-        """Registra un nuevo tipo de recurso. O(1)"""
+-        if self.contador_recursos >= self.num_recursos:
+-            raise ValueError(f"No hay más espacio para recursos (máximo: {self.num_recursos})")
++        """
++        Registra un nuevo tipo de recurso (le asigna una columna).
++
++        Ya no hay tope de 100: si las columnas se llenan, la matriz crece
++        (RNF: operar con 500+ registros). Si el recurso ya estaba registrado,
++        devuelve su columna sin crecer.
+ 
++        Complejidad: O(1) amortizado; O(sedes × recursos) en el registro que crece.
++        """
+         if codigo_recurso not in self.mapeo_recursos:
++            # Antes se lanzaba ValueError aquí y el recurso 101 quedaba sin columna.
++            if self.contador_recursos >= self.num_recursos:
++                self._redimensionar_columnas()
+             idx = self.contador_recursos
+             self.mapeo_recursos[codigo_recurso] = idx
+             self.contador_recursos += 1
+--- a/pruebas/test_correcciones_menu.py
++++ b/pruebas/test_correcciones_menu.py
+@@ -0,0 +1,626 @@
++#!/usr/bin/env python3
++"""
++PRUEBAS DE LAS CORRECCIONES DEL MENÚ (E1 a E11)
++
++Ejecutar desde la carpeta del proyecto:
++    python -m pruebas.test_correcciones_menu
++
++Cada caso se reporta como:
++    ENTRADA → OPERACIÓN → RESULTADO ESPERADO → RESULTADO OBTENIDO
++
++Tipos de caso: [normal] operación válida, [error] operación inválida que
++debe rechazarse, [límite] última unidad, cola vacía, recurso 101, etc.
++Los casos [menú] ejecutan main.py con la entrada indicada y revisan su salida.
++"""
++
++import os
++import subprocess
++import sys
++
++# Agregar la carpeta raíz al path para importaciones
++RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++sys.path.insert(0, RAIZ)
++
++from estructuras import VectorDinamico, TablaHash
++from modulos import (GestorUsuarios, GestorRecursos, GestorPrestamos, GestorTurnos,
++                     GestorCategorias, GeneradorInformes)
++from modulos.M03_prestamos import SinUnidadesError
++
++
++# ─────────────────────────────────────────────────────────
++# UTILIDADES
++# ─────────────────────────────────────────────────────────
++
++def caso(tipo, entrada, operacion, esperado, obtenido):
++    """Imprime el caso en el formato pedido y verifica que esperado == obtenido."""
++    ok = esperado == obtenido
++    print(f"  [{tipo}] {'✅' if ok else '❌'}")
++    print(f"    ENTRADA:            {entrada}")
++    print(f"    OPERACIÓN:          {operacion}")
++    print(f"    RESULTADO ESPERADO: {esperado}")
++    print(f"    RESULTADO OBTENIDO: {obtenido}")
++    assert ok, f"{operacion}: se esperaba {esperado!r} y se obtuvo {obtenido!r}"
++
++
++def error_de(funcion, *args):
++    """Ejecuta la función y devuelve 'Tipo: mensaje' del ValueError, o 'sin error'."""
++    try:
++        funcion(*args)
++    except ValueError as e:
++        return f"{type(e).__name__}: {e}"
++    return "sin error"
++
++
++def sistema(unidades=5):
++    """
++    Sistema como el de main.py: usuarios U001-U003, sedes Centro/Norte/Sur
++    y R0001 con `unidades` ejemplares en Centro.
++    """
++    gu = GestorUsuarios()
++    gr = GestorRecursos(num_sedes=3)
++    for i, nombre in enumerate(("Centro", "Norte", "Sur")):
++        gr.registrar_sede(i, nombre)
++    gt = GestorTurnos(gestor_usuarios=gu, gestor_recursos=gr)
++    gp = GestorPrestamos(gestor_turnos=gt, gestor_usuarios=gu, gestor_recursos=gr)
++    for nombre in ("Carlos", "Ana", "Luis"):
++        gu.registrar(nombre, nombre.lower() + "@uni.edu")
++    r = gr.registrar_libro("Python 101", "Guido", "978-123", 2020)
++    gr.actualizar_disponibilidad(r, "Centro", unidades)
++    return gu, gr, gt, gp
++
++
++def disp(gr, recurso="R0001", sede="Centro"):
++    """Unidades disponibles en la matriz de inventario."""
++    return gr.obtener_disponibilidad(recurso, sede)
++
++
++def fila(gt, recurso="R0001"):
++    """Usuarios en la fila de espera, en orden."""
++    return [s.usuario_codigo for s in gt.obtener_fila(recurso)]
++
++
++def ejecutar_menu(entrada):
++    """Ejecuta main.py con la entrada dada y devuelve (salida, código de salida)."""
++    entorno = os.environ.copy()
++    entorno["PYTHONIOENCODING"] = "utf-8"
++    r = subprocess.run([sys.executable, "-W", "ignore", "main.py"], input=entrada,
++                       capture_output=True, text=True, encoding="utf-8",
++                       cwd=RAIZ, env=entorno)
++    return r.stdout + r.stderr, r.returncode
++
++
++def menu_ok(salida, codigo):
++    """El programa terminó normalmente y sin Traceback."""
++    return codigo == 0 and "Traceback" not in salida
++
++
++# ─────────────────────────────────────────────────────────
++# PRUEBAS
++# ─────────────────────────────────────────────────────────
++
++def test_e1_listar_activos():
++    """E1: GestorPrestamos.listar_activos()."""
++    print("\n🧪 E1: Listar préstamos activos")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(5)
++
++    caso("límite", "sin préstamos", "listar_activos().obtener_tamaño()", 0,
++         gp.listar_activos().obtener_tamaño())
++
++    gp.registrar_prestamo("U001", "R0001", "Centro")
++    gp.registrar_prestamo("U002", "R0001", "Centro")
++    activos = gp.listar_activos()
++    caso("normal", "P0001 y P0002 activos", "listar_activos() devuelve VectorDinamico",
++         True, isinstance(activos, VectorDinamico))
++    caso("normal", "P0001 y P0002 activos", "códigos en listar_activos()",
++         "P0001,P0002", ",".join(activos.obtener(i).codigo for i in range(activos.obtener_tamaño())))
++
++    gp.registrar_devolucion("P0001")
++    activos = gp.listar_activos()
++    caso("normal", "P0001 devuelto, P0002 activo", "listar_activos() solo trae 'Activo'",
++         "P0002", ",".join(activos.obtener(i).codigo for i in range(activos.obtener_tamaño())))
++
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0001\nCentro\n\n3\n\n0\n0\n")
++    caso("menú", "Préstamos → 1 (U001, R0001, Centro) → 3", "salida de main.py",
++         "sin Traceback, 'Total prestamos activos: 1'",
++         "sin Traceback, 'Total prestamos activos: 1'"
++         if menu_ok(salida, codigo) and "Total prestamos activos: 1" in salida else salida[-300:])
++
++    salida, codigo = ejecutar_menu("4\n3\n\n0\n0\n")
++    caso("menú", "Préstamos → 3 sin préstamos", "salida de main.py",
++         "sin Traceback, 'Total prestamos activos: 0'",
++         "sin Traceback, 'Total prestamos activos: 0'"
++         if menu_ok(salida, codigo) and "Total prestamos activos: 0" in salida else salida[-300:])
++
++    print("✅ E1: CORRECTO")
++    return True
++
++
++def test_e2_errores_capturados():
++    """E2: el menú captura los ValueError de los gestores."""
++    print("\n🧪 E2: ValueError capturados en el menú")
++    print("-" * 50)
++    gu = GestorUsuarios()
++
++    caso("error", "nombre='', email='x@u'", "GestorUsuarios.registrar",
++         "ValueError: El nombre del usuario no puede estar vacío",
++         error_de(gu.registrar, "", "x@u"))
++    caso("error", "nombre='Ana', email='   '", "GestorUsuarios.registrar",
++         "ValueError: El email del usuario no puede estar vacío",
++         error_de(gu.registrar, "Ana", "   "))
++
++    salida, codigo = ejecutar_menu("1\n1\n\n\n\n0\n0\n")
++    caso("menú", "Usuarios → 1 con nombre y email vacíos", "salida de main.py",
++         "sin Traceback, 'Error: El nombre del usuario no puede estar vacío'",
++         "sin Traceback, 'Error: El nombre del usuario no puede estar vacío'"
++         if menu_ok(salida, codigo) and "Error: El nombre del usuario no puede estar vacío" in salida
++         else salida[-300:])
++
++    salida, codigo = ejecutar_menu("1\n1\nLuis\nluis@uni.edu\n\n0\n0\n")
++    caso("menú", "Usuarios → 1 con 'Luis', 'luis@uni.edu'", "salida de main.py",
++         "sin Traceback, 'Usuario registrado: U003'",
++         "sin Traceback, 'Usuario registrado: U003'"
++         if menu_ok(salida, codigo) and "Usuario registrado: U003" in salida else salida[-300:])
++
++    salida, codigo = ejecutar_menu("4\n1\nU999\nR0001\nCentro\n\n1\nU001\nR0001\nMarte\n\n8\n\n0\n0\n")
++    caso("menú", "Préstamos → usuario U999, sede 'Marte', deshacer sin operaciones",
++         "salida de main.py",
++         "sin Traceback, 3 mensajes",
++         "sin Traceback, 3 mensajes"
++         if menu_ok(salida, codigo) and "Error: Usuario U999 no existe" in salida
++         and "Error: Sede 'Marte' no existe" in salida
++         and "No hay operaciones para deshacer" in salida else salida[-300:])
++
++    print("✅ E2: CORRECTO")
++    return True
++
++
++def test_e3_disponibilidad_por_sede():
++    """E3: se presta mientras haya unidades en la sede (sin regla 'exclusivo')."""
++    print("\n🧪 E3: Préstamo según unidades de la sede")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(5)
++
++    codigos = ",".join(gp.registrar_prestamo(u, "R0001", "Centro")
++                       for u in ("U001", "U002", "U003", "U001", "U002"))
++    caso("normal", "R0001 con 5 en Centro", "prestar 5 veces", "P0001,P0002,P0003,P0004,P0005", codigos)
++    caso("límite", "se prestó la última unidad", "disponibilidad R0001/Centro", 0, disp(gr))
++    caso("error", "R0001 con 0 en Centro", "sexto préstamo",
++         "SinUnidadesError: Sin unidades disponibles de R0001 en Centro",
++         error_de(gp.registrar_prestamo, "U003", "R0001", "Centro"))
++    caso("error", "SinUnidadesError", "¿es un ValueError?", True, issubclass(SinUnidadesError, ValueError))
++    caso("error", "R0001 con 0 en Norte", "prestar en Norte",
++         "SinUnidadesError: Sin unidades disponibles de R0001 en Norte",
++         error_de(gp.registrar_prestamo, "U001", "R0001", "Norte"))
++    caso("normal", "GestorPrestamos", "¿todavía tiene el atributo 'exclusivo'?",
++         False, hasattr(gp, "exclusivo"))
++
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0001\nCentro\n\n1\nU002\nR0001\nCentro\n\n0\n3\n\n0\n")
++    caso("menú", "dos préstamos de R0001 en Centro y ver la matriz", "salida de main.py",
++         "P0002 registrado, nunca 'None', Centro R0001 = 3",
++         "P0002 registrado, nunca 'None', Centro R0001 = 3"
++         if menu_ok(salida, codigo) and "Prestamo registrado: P0002" in salida
++         and "registrado: None" not in salida and "Centro          | 3" in salida else salida[-400:])
++
++    # R0003 tiene 1 unidad: U001 la toma y U002 pide turno desde el menú de préstamos
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0003\nCentro\n\n1\nU002\nR0003\nCentro\ns\n\n0\n0\n")
++    caso("menú", "R0003 (1 unidad): U001 presta, U002 intenta y responde 's'", "salida de main.py",
++         "sin unidades + 'Turno S0001 asignado, posicion 1 en la fila'",
++         "sin unidades + 'Turno S0001 asignado, posicion 1 en la fila'"
++         if menu_ok(salida, codigo) and "Error: Sin unidades disponibles de R0003 en Centro" in salida
++         and "Turno S0001 asignado, posicion 1 en la fila" in salida else salida[-400:])
++
++    print("✅ E3: CORRECTO")
++    return True
++
++
++def test_e4_inventario():
++    """E4: prestar/devolver/deshacer actualizan la matriz de inventario."""
++    print("\n🧪 E4: Inventario en préstamo, devolución y deshacer")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(5)
++
++    gp.registrar_prestamo("U001", "R0001", "Centro")
++    caso("normal", "R0001 con 5 en Centro", "prestar 1", 4, disp(gr))
++    for u in ("U002", "U003", "U001", "U002"):
++        gp.registrar_prestamo(u, "R0001", "Centro")
++    caso("límite", "4 préstamos más", "disponibilidad", 0, disp(gr))
++
++    gp.registrar_devolucion("P0001")
++    caso("normal", "disponibilidad 0", "devolver P0001", 1, disp(gr))
++    gp.deshacer()
++    caso("normal", "disponibilidad 1 tras devolver", "deshacer esa devolución", 0, disp(gr))
++    caso("normal", "deshacer devolución", "estado de P0001", "Activo", gp.buscar_prestamo("P0001").estado)
++    gp.deshacer()
++    caso("normal", "disponibilidad 0", "deshacer el préstamo P0005", 1, disp(gr))
++    caso("normal", "deshacer préstamo", "¿P0005 sigue existiendo?", None, gp.buscar_prestamo("P0005"))
++    caso("normal", "Norte no participó", "disponibilidad R0001/Norte", 0, disp(gr, sede="Norte"))
++
++    # Caso límite: el inventario se cambió a mano y ya no hay unidad para revertir la devolución
++    gp.registrar_devolucion("P0004")
++    gr.actualizar_disponibilidad("R0001", "Centro", 0)
++    caso("límite", "devolución de P0004 y luego inventario puesto en 0 a mano", "deshacer",
++         "ValueError: No se puede deshacer la devolucion de P0004: no quedan unidades de R0001 en Centro",
++         error_de(gp.deshacer))
++    tope = gp.pila_deshacer.peek()
++    caso("límite", "deshacer rechazado", "tope de la pila (la operación no se perdió)",
++         "registrar_devolucion P0004", f"{tope['operacion']} {tope['prestamo'].codigo}")
++    caso("límite", "deshacer rechazado", "estado de P0004 (sin cambios)", "Devuelto",
++         gp.buscar_prestamo("P0004").estado)
++
++    print("✅ E4: CORRECTO")
++    return True
++
++
++def test_e5_devolucion_inexistente():
++    """E5: devolver un préstamo inexistente o ya devuelto."""
++    print("\n🧪 E5: Devolución inexistente")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(5)
++    gp.registrar_prestamo("U001", "R0001", "Centro")
++
++    caso("error", "P9999 no existe", "registrar_devolucion('P9999')", False, gp.registrar_devolucion("P9999"))
++    caso("normal", "P0001 activo", "registrar_devolucion('P0001')", True, gp.registrar_devolucion("P0001"))
++    caso("límite", "P0001 ya devuelto", "registrar_devolucion('P0001') otra vez", False,
++         gp.registrar_devolucion("P0001"))
++    caso("límite", "segunda devolución rechazada", "disponibilidad (no suma dos veces)", 5, disp(gr))
++
++    salida, codigo = ejecutar_menu("4\n2\nP9999\n\n0\n0\n")
++    caso("menú", "Préstamos → 2 con P9999", "salida de main.py",
++         "'Error: El prestamo P9999 no existe o ya fue devuelto', sin 'Devolucion registrada'",
++         "'Error: El prestamo P9999 no existe o ya fue devuelto', sin 'Devolucion registrada'"
++         if menu_ok(salida, codigo) and "Error: El prestamo P9999 no existe o ya fue devuelto" in salida
++         and "Devolucion registrada" not in salida else salida[-300:])
++
++    print("✅ E5: CORRECTO")
++    return True
++
++
++def test_e6a_solicitar_turno():
++    """E6a: GestorTurnos.solicitar_turno valida antes de encolar."""
++    print("\n🧪 E6a: Solicitar turno")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(1)
++
++    caso("error", "R0001 con 1 en Centro", "solicitar_turno(U002, R0001, Centro)",
++         "ValueError: Hay unidades disponibles: registre el préstamo",
++         error_de(gt.solicitar_turno, "U002", "R0001", "Centro"))
++
++    gp.registrar_prestamo("U001", "R0001", "Centro")
++    caso("normal", "R0001 con 0 en Centro", "solicitar_turno(U002, R0001, Centro)",
++         "S0001", gt.solicitar_turno("U002", "R0001", "Centro"))
++    caso("normal", "R0001 con 0 en Centro", "solicitar_turno(U003, R0001, Centro)",
++         "S0002", gt.solicitar_turno("U003", "R0001", "Centro"))
++    caso("normal", "dos turnos", "posición de U003 = obtener_cantidad_espera", 2,
++         gt.obtener_cantidad_espera("R0001"))
++    caso("error", "U002 ya está en la fila", "solicitar_turno(U002, R0001, Centro)",
++         "ValueError: El usuario U002 ya esta en la fila de R0001",
++         error_de(gt.solicitar_turno, "U002", "R0001", "Centro"))
++    caso("error", "U999 no existe", "solicitar_turno(U999, R0001, Centro)",
++         "ValueError: Usuario U999 no existe", error_de(gt.solicitar_turno, "U999", "R0001", "Centro"))
++    caso("error", "R0099 no existe", "solicitar_turno(U001, R0099, Centro)",
++         "ValueError: Recurso R0099 no existe", error_de(gt.solicitar_turno, "U001", "R0099", "Centro"))
++    caso("error", "sede 'Marte' no existe", "solicitar_turno(U001, R0001, Marte)",
++         "ValueError: Sede 'Marte' no existe", error_de(gt.solicitar_turno, "U001", "R0001", "Marte"))
++    u4 = gu.registrar("Inactivo", "in@uni.edu")
++    gu.dar_de_baja(u4)
++    caso("error", f"{u4} dado de baja", f"solicitar_turno({u4}, R0001, Centro)",
++         f"ValueError: El usuario {u4} esta inactivo", error_de(gt.solicitar_turno, u4, "R0001", "Centro"))
++    caso("error", "solicitudes rechazadas", "la fila no cambió", ["U002", "U003"], fila(gt))
++
++    # Menú: R0003 tiene 1 unidad; U001 la presta y U002 pide turno desde Turnos → 4
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0003\nCentro\n\n0\n5\n4\nU002\nR0003\nCentro\n\n"
++                                   "4\nU002\nR0003\nCentro\n\n4\nU001\nR0001\nCentro\n\n0\n0\n")
++    caso("menú", "Turnos → 4: U002/R0003 dos veces y U001/R0001 (con unidades)", "salida de main.py",
++         "turno asignado, duplicado rechazado, 'Hay unidades disponibles'",
++         "turno asignado, duplicado rechazado, 'Hay unidades disponibles'"
++         if menu_ok(salida, codigo) and "Turno S0001 asignado, posicion 1 en la fila" in salida
++         and "Error: El usuario U002 ya esta en la fila de R0003" in salida
++         and "Error: Hay unidades disponibles: registre el préstamo" in salida else salida[-400:])
++
++    print("✅ E6a: CORRECTO")
++    return True
++
++
++def test_e6b_ver_siguiente():
++    """E6b: ver_siguiente consulta sin desencolar."""
++    print("\n🧪 E6b: Ver siguiente turno sin sacarlo")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(0)
++
++    caso("límite", "fila vacía", "ver_siguiente(R0001)", None, gt.ver_siguiente("R0001"))
++    gt.solicitar_turno("U002", "R0001", "Centro")
++    caso("límite", "un solo elemento [U002]", "ver_siguiente(R0001).usuario_codigo", "U002",
++         gt.ver_siguiente("R0001").usuario_codigo)
++    gt.solicitar_turno("U003", "R0001", "Centro")
++    gt.ver_siguiente("R0001")
++    gt.ver_siguiente("R0001")
++    caso("normal", "fila [U002, U003]", "ver_siguiente dos veces → tamaño de la fila", 2,
++         gt.obtener_cantidad_espera("R0001"))
++    caso("normal", "fila [U002, U003]", "estado de S0001 tras consultar", "En espera",
++         gt.buscar_solicitud("S0001").estado)
++
++    # Menú: dejar a U002 en fila de R0003 y consultar "Ver siguiente" dos veces
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0003\nCentro\n\n0\n5\n4\nU002\nR0003\nCentro\n\n"
++                                   "1\nR0003\n\n1\nR0003\n\n3\nR0003\n\n0\n0\n")
++    caso("menú", "Turnos → 1 dos veces y luego 3", "salida de main.py",
++         "U002 aparece 2 veces como siguiente y sigue '1 personas esperando'",
++         "U002 aparece 2 veces como siguiente y sigue '1 personas esperando'"
++         if menu_ok(salida, codigo) and salida.count("Siguiente en fila: U002") == 2
++         and "1 personas esperando por R0003" in salida else salida[-400:])
++
++    print("✅ E6b: CORRECTO")
++    return True
++
++
++def test_e6c_atender_al_devolver():
++    """E6c: al devolver se asigna automáticamente al siguiente de la fila."""
++    print("\n🧪 E6c: Atender la fila al devolver")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(1)
++
++    gp.registrar_prestamo("U001", "R0001", "Centro")
++    caso("límite", "R0001 sin fila", "registrar_devolucion('P0001')", True, gp.registrar_devolucion("P0001"))
++
++    gp.registrar_prestamo("U001", "R0001", "Centro")  # P0002, queda 0
++    gt.solicitar_turno("U002", "R0001", "Centro")
++    gt.solicitar_turno("U003", "R0001", "Centro")
++    resultado = gp.registrar_devolucion("P0002")
++    caso("normal", "fila [U002, U003]", "registrar_devolucion('P0002') devuelve", "P0003", resultado)
++    caso("normal", "asignación automática", "usuario del préstamo P0003", "U002",
++         gp.buscar_prestamo("P0003").usuario_codigo)
++    caso("normal", "asignación automática", "fila después", ["U003"], fila(gt))
++    caso("normal", "asignación automática", "disponibilidad (devuelta y vuelta a prestar)", 0, disp(gr))
++    caso("normal", "asignación automática", "estado de S0001", "Otorgado", gt.buscar_solicitud("S0001").estado)
++
++    # Usuario de la fila que ya no está activo: se salta
++    gu2, gr2, gt2, gp2 = sistema(1)
++    gp2.registrar_prestamo("U001", "R0001", "Centro")
++    gt2.solicitar_turno("U002", "R0001", "Centro")
++    gt2.solicitar_turno("U003", "R0001", "Centro")
++    gu2.dar_de_baja("U002")
++    resultado = gp2.registrar_devolucion("P0001")
++    caso("normal", "fila [U002 (inactivo), U003]", "devolver P0001 → usuario asignado",
++         "U003", gp2.buscar_prestamo(resultado).usuario_codigo)
++    caso("normal", "U002 inactivo saltado", "estado de su solicitud S0001", "Cancelado",
++         gt2.buscar_solicitud("S0001").estado)
++
++    # Fila solo con usuarios inactivos: la unidad queda libre
++    gu3, gr3, gt3, gp3 = sistema(1)
++    gp3.registrar_prestamo("U001", "R0001", "Centro")
++    gt3.solicitar_turno("U002", "R0001", "Centro")
++    gu3.dar_de_baja("U002")
++    caso("límite", "fila [U002 (inactivo)]", "registrar_devolucion('P0001')", True,
++         gp3.registrar_devolucion("P0001"))
++    caso("límite", "nadie activo en la fila", "disponibilidad", 1, disp(gr3))
++    caso("límite", "nadie activo en la fila", "fila después", [], fila(gt3))
++
++    # Menú: devolver con alguien en la fila
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0003\nCentro\n\n0\n5\n4\nU002\nR0003\nCentro\n\n0\n"
++                                   "4\n2\nP0001\n\n0\n0\n")
++    caso("menú", "U001 presta R0003, U002 en fila, devolver P0001", "salida de main.py",
++         "'Asignado automaticamente a U002 (siguiente en la fila): P0002'",
++         "'Asignado automaticamente a U002 (siguiente en la fila): P0002'"
++         if menu_ok(salida, codigo)
++         and "Asignado automaticamente a U002 (siguiente en la fila): P0002" in salida else salida[-400:])
++
++    print("✅ E6c: CORRECTO")
++    return True
++
++
++def test_e7_categoria_repetida():
++    """E7: no se repiten códigos de categoría."""
++    print("\n🧪 E7: Categoría repetida")
++    print("-" * 50)
++    gc = GestorCategorias()
++
++    caso("normal", "C1 'Ingenieria'", "registrar_categoria", "C1", gc.registrar_categoria("C1", "Ingenieria"))
++    caso("error", "C1 ya existe", "registrar_categoria('C1', 'Repetida')",
++         "ValueError: La categoria C1 ya existe", error_de(gc.registrar_categoria, "C1", "Repetida"))
++    caso("error", "C1 rechazada", "nombre de C1", "Ingenieria", gc.obtener_categoria("C1").nombre)
++    caso("error", "C1 rechazada", "obtener_cantidad()", 1, gc.obtener_cantidad())
++    caso("normal", "GestorCategorias", "estructura de 'categorias'", "TablaHash",
++         type(gc.categorias).__name__)
++    caso("límite", "C9 no existe", "obtener_categoria('C9')", None, gc.obtener_categoria("C9"))
++
++    salida, codigo = ejecutar_menu("6\n1\nC1\nIngenieria\n\n1\nC1\nRepetida\n\n2\nC1\n\n0\n0\n")
++    caso("menú", "Categorías → C1 dos veces y buscar C1", "salida de main.py",
++         "'Error: La categoria C1 ya existe' y 'C1: Ingenieria'",
++         "'Error: La categoria C1 ya existe' y 'C1: Ingenieria'"
++         if menu_ok(salida, codigo) and "Error: La categoria C1 ya existe" in salida
++         and "C1: Ingenieria" in salida and "C1: Repetida" not in salida else salida[-300:])
++
++    print("✅ E7: CORRECTO")
++    return True
++
++
++def test_e8_informes():
++    """E8: GeneradorInformes recibe recursos y préstamos."""
++    print("\n🧪 E8: Informes")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(5)
++    gr.registrar_equipo("Proyector", "Proyector", "Epson", "Sala A")
++    gr.registrar_sala("Sala", 30)
++    gp.registrar_prestamo("U001", "R0001", "Centro")
++    gi = GeneradorInformes(gestor_recursos=gr, gestor_prestamos=gp)
++
++    caso("normal", "3 recursos y 1 préstamo", "generar_reporte_uso()",
++         "Total de préstamos registrados: 1", gi.generar_reporte_uso())
++    caso("normal", "3 recursos y 1 préstamo", "generar_reporte_inventario()",
++         "GestorRecursos(libros=1, equipos=1, salas=1)", gi.generar_reporte_inventario())
++    caso("límite", "sin gestores", "GeneradorInformes().generar_reporte_uso()", "Sin datos",
++         GeneradorInformes().generar_reporte_uso())
++
++    salida, codigo = ejecutar_menu("4\n1\nU001\nR0001\nCentro\n\n0\n7\n1\n\n2\n\n0\n0\n")
++    caso("menú", "1 préstamo y luego Informes → 1 y 2", "salida de main.py",
++         "'Total de préstamos registrados: 1' y 'GestorRecursos(...)'",
++         "'Total de préstamos registrados: 1' y 'GestorRecursos(...)'"
++         if menu_ok(salida, codigo) and "Total de préstamos registrados: 1" in salida
++         and "GestorRecursos(libros=1, equipos=1, salas=1)" in salida
++         and "GestorUsuarios(" not in salida else salida[-300:])
++
++    print("✅ E8: CORRECTO")
++    return True
++
++
++def test_e9_usuario_inactivo_recurso_baja():
++    """E9: no se presta a usuarios inactivos ni recursos dados de baja."""
++    print("\n🧪 E9: Usuario inactivo / recurso dado de baja")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(5)
++
++    gu.dar_de_baja("U001")
++    caso("error", "U001 inactivo", "registrar_prestamo(U001, R0001, Centro)",
++         "ValueError: El usuario U001 esta inactivo",
++         error_de(gp.registrar_prestamo, "U001", "R0001", "Centro"))
++    caso("error", "préstamo rechazado", "disponibilidad (no se descontó)", 5, disp(gr))
++    caso("normal", "U002 activo", "registrar_prestamo(U002, R0001, Centro)", "P0001",
++         gp.registrar_prestamo("U002", "R0001", "Centro"))
++
++    r2 = gr.registrar_libro("Viejo", "a", "i", 1990)
++    gr.actualizar_disponibilidad(r2, "Centro", 2)
++    gr.dar_de_baja(r2)
++    caso("error", f"{r2} dado de baja", f"registrar_prestamo(U002, {r2}, Centro)",
++         f"ValueError: El recurso {r2} esta dado de baja",
++         error_de(gp.registrar_prestamo, "U002", r2, "Centro"))
++    caso("error", "préstamo rechazado", f"disponibilidad de {r2}", 2, disp(gr, r2))
++
++    print("✅ E9: CORRECTO")
++    return True
++
++
++def test_e10_inventario_500():
++    """E10: la matriz crece y acepta 500+ recursos."""
++    print("\n🧪 E10: 500 recursos con existencias")
++    print("-" * 50)
++    gr = GestorRecursos(num_sedes=3)
++    gr.registrar_sede(0, "Centro")
++    for i in range(500):
++        c = gr.registrar_libro(f"L{i}", "a", "i", 2000)
++        gr.actualizar_disponibilidad(c, "Centro", 3)
++
++    caso("normal", "500 libros con 3 en Centro", "cantidad de recursos", 500, gr.obtener_cantidad())
++    caso("normal", "500 libros con 3 en Centro", "disponibilidad R0500", 3, disp(gr, "R0500"))
++    caso("normal", "tras crecer varias veces", "disponibilidad R0001 (se copió)", 3, disp(gr, "R0001"))
++    caso("límite", "recurso 101 (antes fallaba)", "disponibilidad R0101", 3, disp(gr, "R0101"))
++    caso("límite", "500 columnas usadas", "capacidad de columnas >= 500", True, gr.inventario.num_recursos >= 500)
++
++    columnas = gr.inventario.num_recursos
++    caso("límite", "R0001 ya registrado", "registrar_recurso('R0001') otra vez → columna", 0,
++         gr.inventario.registrar_recurso("R0001", "L0"))
++    caso("límite", "R0001 ya registrado", "las columnas no crecieron", columnas, gr.inventario.num_recursos)
++
++    gu = GestorUsuarios()
++    gu.registrar("Ana", "a@u")
++    gp = GestorPrestamos(gestor_usuarios=gu, gestor_recursos=gr)
++    gp.registrar_prestamo("U001", "R0101", "Centro")
++    caso("normal", "R0101 con 3", "prestar R0101 → disponibilidad", 2, disp(gr, "R0101"))
++
++    print("✅ E10: CORRECTO")
++    return True
++
++
++def test_e11_deshacer_turno():
++    """E11: deshacer un préstamo asignado desde la fila devuelve al usuario al frente."""
++    print("\n🧪 E11: Deshacer préstamo asignado desde la fila")
++    print("-" * 50)
++    gu, gr, gt, gp = sistema(1)
++
++    gp.registrar_prestamo("U001", "R0001", "Centro")  # P0001, queda 0
++    gt.solicitar_turno("U002", "R0001", "Centro")
++    gt.solicitar_turno("U003", "R0001", "Centro")
++    gp.registrar_devolucion("P0001")  # asigna P0002 a U002
++    caso("normal", "devolución con fila [U002, U003]", "operaciones en la pila (préstamo, devolución, automático)",
++         3, gp.pila_deshacer.obtener_tamaño())
++
++    gp.deshacer()
++    caso("normal", "deshacer el préstamo automático P0002", "fila", ["U002", "U003"], fila(gt))
++    caso("normal", "deshacer el préstamo automático P0002", "estado de S0001", "En espera",
++         gt.buscar_solicitud("S0001").estado)
++    caso("normal", "deshacer el préstamo automático P0002", "¿P0002 existe?", None, gp.buscar_prestamo("P0002"))
++    caso("normal", "deshacer el préstamo automático P0002", "disponibilidad", 1, disp(gr))
++
++    gp.deshacer()
++    caso("normal", "deshacer otra vez", "estado de P0001 (devolución revertida)", "Activo",
++         gp.buscar_prestamo("P0001").estado)
++    caso("normal", "deshacer otra vez", "disponibilidad", 0, disp(gr))
++    caso("normal", "deshacer otra vez", "fila (sin cambios)", ["U002", "U003"], fila(gt))
++
++    # atender_siguiente_turno directo, como en el script del prompt (sin recurso R0005 especial)
++    gu2, gr2, gt2, gp2 = sistema(0)
++    gt2.solicitar_turno("U002", "R0001", "Centro")
++    gt2.solicitar_turno("U003", "R0001", "Centro")
++    gr2.actualizar_disponibilidad("R0001", "Centro", 1)
++    gp2.atender_siguiente_turno("R0001", "Centro")
++    caso("normal", "atender_siguiente_turno con fila [U002, U003]", "fila", ["U003"], fila(gt2))
++    gp2.deshacer()
++    caso("normal", "deshacer ese préstamo", "fila (U002 vuelve al frente)", ["U002", "U003"], fila(gt2))
++
++    # Un préstamo normal (sin solicitud) no toca la fila al deshacerse
++    gu3, gr3, gt3, gp3 = sistema(1)
++    gp3.registrar_prestamo("U001", "R0001", "Centro")
++    gt3.solicitar_turno("U002", "R0001", "Centro")
++    gp3.deshacer()
++    caso("límite", "deshacer un préstamo que no vino de la fila", "fila", ["U002"], fila(gt3))
++    caso("límite", "pila vacía", "deshacer()", False, gp3.deshacer())
++
++    print("✅ E11: CORRECTO")
++    return True
++
++
++def main():
++    """Ejecuta todas las pruebas."""
++    print("\n" + "=" * 70)
++    print("PRUEBAS DE CORRECCIONES DEL MENÚ — E1 a E11")
++    print("=" * 70)
++
++    pruebas = [
++        ("E1  Listar préstamos activos", test_e1_listar_activos),
++        ("E2  ValueError capturados en el menú", test_e2_errores_capturados),
++        ("E3  Préstamo según unidades de la sede", test_e3_disponibilidad_por_sede),
++        ("E4  Inventario en préstamo/devolución/deshacer", test_e4_inventario),
++        ("E5  Devolución inexistente", test_e5_devolucion_inexistente),
++        ("E6a Solicitar turno", test_e6a_solicitar_turno),
++        ("E6b Ver siguiente sin sacar", test_e6b_ver_siguiente),
++        ("E6c Atender la fila al devolver", test_e6c_atender_al_devolver),
++        ("E7  Categoría repetida", test_e7_categoria_repetida),
++        ("E8  Informes", test_e8_informes),
++        ("E9  Usuario inactivo / recurso de baja", test_e9_usuario_inactivo_recurso_baja),
++        ("E10 500 recursos en inventario", test_e10_inventario_500),
++        ("E11 Deshacer préstamo desde la fila", test_e11_deshacer_turno),
++    ]
++
++    resultados = []
++    for nombre, prueba in pruebas:
++        try:
++            resultado = prueba()
++            resultados.append((nombre, resultado))
++        except Exception as e:
++            print(f"❌ {nombre}: ERROR")
++            print(f"   {e}")
++            resultados.append((nombre, False))
++
++    # Resumen
++    print("\n" + "=" * 70)
++    print("RESUMEN")
++    print("=" * 70)
++
++    aprobadas = sum(1 for _, r in resultados if r)
++    total = len(resultados)
++
++    for nombre, resultado in resultados:
++        estado = "✅ CORRECTO" if resultado else "❌ ERROR"
++        print(f"{estado}: {nombre}")
++
++    print(f"\nTotal: {aprobadas}/{total} pruebas aprobadas")
++
++    if aprobadas == total:
++        print("\n🎉 ¡TODAS LAS PRUEBAS PASARON!")
++        return 0
++    else:
++        print(f"\n⚠️  {total - aprobadas} prueba(s) fallaron")
++        return 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())

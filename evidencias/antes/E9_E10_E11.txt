@@ -1,0 +1,7 @@
+E10: ValueError en el recurso 101 (R0101): No hay más espacio para recursos (máximo: 100)
+     R0101 registrado en GestorRecursos: True; disponibilidad en la matriz: 0
+E9: préstamo a usuario INACTIVO -> P0001
+E9: préstamo de recurso DADO DE BAJA -> P0002
+E11: cola antes  = ['U002', 'U003']
+E11: atendido    = P0001 | cola = ['U003']
+E11: tras deshacer cola = ['U003'] | estado S0001 = Otorgado

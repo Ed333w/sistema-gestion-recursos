@@ -1,0 +1,2 @@
+E6b: 'Ver siguiente' muestra U002 | personas en fila después de mirar: 1 | estado S0001: En espera
+E6c: registrar_devolucion devuelve 'P0002' | fila después: [] | préstamos activos de U002: 1

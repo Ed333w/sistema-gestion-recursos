@@ -1,0 +1,61 @@
+Cargando sistema...
+Cargando datos de ejemplo...
+ Sistema listo
+
+======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE USUARIOS (M01)
+
+
+1. Registrar usuario
+2. Listar usuarios
+3. Consultar usuario
+0. Volver
+
+Selecciona opcion: 
+Nombre: Email: Traceback (most recent call last):
+  File "<proyecto_original>\main.py", line 702, in <module>
+    main()
+    ~~~~^^
+  File "<proyecto_original>\main.py", line 669, in main
+    gestion_usuarios(gestor_usuarios)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "<proyecto_original>\main.py", line 254, in gestion_usuarios
+    codigo = gestor.registrar(nombre, email)
+  File "<proyecto_original>\modulos\M01_usuarios\gestor_usuarios.py", line 118, in registrar
+    raise ValueError("El nombre del usuario no puede estar vacío")
+ValueError: El nombre del usuario no puede estar vacío
+exit=1

@@ -1,0 +1,116 @@
+Cargando sistema...
+Cargando datos de ejemplo...
+ Sistema listo
+
+======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE CATEGORIAS (M05 - Árbol Binario)
+
+
+1. Registrar categoria
+2. Buscar categoria
+3. Listar todas las categorias
+0. Volver
+
+Selecciona opcion: 
+Codigo categoria: Nombre categoria: 
+ Categoria registrada: C1
+
+Presione Enter para continuar...
+1. Registrar categoria
+2. Buscar categoria
+3. Listar todas las categorias
+0. Volver
+
+Selecciona opcion: 
+Codigo categoria: Nombre categoria: 
+ Categoria registrada: C1
+
+Presione Enter para continuar...
+1. Registrar categoria
+2. Buscar categoria
+3. Listar todas las categorias
+0. Volver
+
+Selecciona opcion: 
+Codigo categoria: 
+  C1: Repetida
+
+Presione Enter para continuar...
+1. Registrar categoria
+2. Buscar categoria
+3. Listar todas las categorias
+0. Volver
+
+Selecciona opcion: ======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion: 
+¡Hasta luego! 
+
+exit=0

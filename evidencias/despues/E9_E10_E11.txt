@@ -1,0 +1,6 @@
+E10: 500 recursos OK; R0500 = 3
+E9: rechazado: El usuario U001 esta inactivo
+E9: rechazado: El recurso R0002 esta dado de baja
+E11: cola antes  = ['U002', 'U003']
+E11: atendido    = P0001 | cola = ['U003']
+E11: tras deshacer cola = ['U002', 'U003'] | estado S0001 = En espera

@@ -1,0 +1,81 @@
+<proyecto_original>\estructuras\arbol_binario.py:25: SyntaxWarning: "\ " is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\ "? A raw string is also an option.
+  /    \        /      \
+Cargando sistema...
+Cargando datos de ejemplo...
+ Sistema listo
+
+======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE PRESTAMOS (M03)
+
+
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: 
+Codigo usuario: Codigo recurso: Sede (Centro/Norte/Sur): 
+ Prestamo registrado: P0001
+
+Presione Enter para continuar...
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: Traceback (most recent call last):
+  File "<proyecto_original>\main.py", line 702, in <module>
+    main()
+    ~~~~^^
+  File "<proyecto_original>\main.py", line 678, in main
+    gestion_prestamos(gestor_prestamos, gestor_usuarios, gestor_recursos)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<proyecto_original>\main.py", line 393, in gestion_prestamos
+    prestamos = gestor_prestamos.listar_activos()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'GestorPrestamos' object has no attribute 'listar_activos'. Did you mean: 'listar_todos'?
+exit=1

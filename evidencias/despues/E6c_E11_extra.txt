@@ -1,0 +1,358 @@
+Cargando sistema...
+Cargando datos de ejemplo...
+ Sistema listo
+
+======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Solicitar turno, ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE PRESTAMOS (M03)
+
+
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: 
+Codigo usuario: Codigo recurso: Sede (Centro/Norte/Sur): 
+ Prestamo registrado: P0001
+
+Presione Enter para continuar...
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: ======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Solicitar turno, ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE TURNOS (M04 - Cola FIFO)
+
+
+1. Ver siguiente turno
+2. Ver fila de espera (por recurso)
+3. Ver cantidad en espera
+4. Solicitar turno
+0. Volver
+
+Selecciona opcion: 
+Codigo usuario: Codigo recurso: Sede (Centro/Norte/Sur): 
+ Turno S0001 asignado, posicion 1 en la fila
+
+Presione Enter para continuar...
+1. Ver siguiente turno
+2. Ver fila de espera (por recurso)
+3. Ver cantidad en espera
+4. Solicitar turno
+0. Volver
+
+Selecciona opcion: ======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Solicitar turno, ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE PRESTAMOS (M03)
+
+
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: 
+Codigo prestamo: 
+ Devolucion registrada
+ Asignado automaticamente a U002 (siguiente en la fila): P0002
+
+Presione Enter para continuar...
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: 
+Total prestamos activos: 1
+
+  P0002: U002 -> R0003 [Centro]
+
+Presione Enter para continuar...
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: 
+ Operacion deshecha (Pila LIFO)
+
+Presione Enter para continuar...
+1. Registrar prestamo
+2. Registrar devolucion
+3. Listar prestamos activos
+4. Listar prestamos atrasados
+5. Listar prestamos por usuario
+6. Listar prestamos por sede
+7. Consultar prestamo
+8. Deshacer ultima operacion (Pila)
+0. Volver
+
+Selecciona opcion: ======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Solicitar turno, ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   GESTION DE TURNOS (M04 - Cola FIFO)
+
+
+1. Ver siguiente turno
+2. Ver fila de espera (por recurso)
+3. Ver cantidad en espera
+4. Solicitar turno
+0. Volver
+
+Selecciona opcion: 
+Codigo recurso: 
+Fila para R0003: 1 personas
+
+  1. U002
+
+Presione Enter para continuar...
+1. Ver siguiente turno
+2. Ver fila de espera (por recurso)
+3. Ver cantidad en espera
+4. Solicitar turno
+0. Volver
+
+Selecciona opcion: ======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Solicitar turno, ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion:   MATRIZ DE INVENTARIO (M02)
+
+Disponibilidad por sede y recurso:
+
+Sede\Recurso    | R0001 | R0002 | R0003
+---------------------------------------
+Centro          | 5     | 2     | 1    
+Norte           | 0     | 0     | 0    
+Sur             | 0     | 0     | 0    
+
+
+Presione Enter para continuar...======================================================================
+  SISTEMA DE GESTION DE RECURSOS COMUNITARIOS
+  Red de Bibliotecas Universitarias - Startup Edition
+======================================================================
+
+═ MODULOS PRINCIPALES ═
+
+  1. Gestion de Usuarios (M01)
+     Registrar, listar, consultar usuarios
+
+  2. Gestion de Recursos (M02)
+     Registrar libros, equipos, salas con herencia
+
+  3. Gestion de Inventario (M07)
+     Ver matriz de disponibilidad por sede y recurso
+
+  4. Gestion de Prestamos (M03)
+     Registrar, devolver, deshacer, historial
+
+  5. Gestion de Turnos (M04)
+     Solicitar turno, ver turnos y fila de espera
+
+  6. Gestion de Categorias (M05)
+     Registrar y buscar categorías
+
+  7. Informes y Reportes (M06)
+     Reportes de uso e inventario
+
+  8. Pruebas de Estructuras
+     VectorDinamico, ListaSimple, ListaDoble, Pila, Cola
+
+  9. Funciones Inteligentes (M08)
+
+  0. Salir
+
+Selecciona opcion: 
+¡Hasta luego! 
+
+exit=0
