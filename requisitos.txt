@@ -1,0 +1,41 @@
+# Requisitos del Sistema de Gestión de Recursos
+
+## Requisitos del Sistema
+- Python 3.7+
+- No requiere dependencias externas (solo stdlib)
+
+## Cómo instalar y ejecutar
+
+```bash
+# Navegar a la carpeta del proyecto
+cd "D:\user\Downloads\Repo proyecto beta"
+
+# Ejecutar el programa
+python main.py
+```
+
+## Contenido
+
+- **estructuras/**: Implementaciones propias de estructuras de datos
+  - VectorDinamico (M01, M02)
+  - ListaSimple y ListaDoble (M03)
+  - Pila (M03)
+  - ColaFIFO (M04)
+  - TablaHash (M05, Entrega 2)
+  - ArbolBinario (M07, Entrega 2)
+  - GrafoBasico (M08, Entrega 2/3)
+
+- **modulos/**: Los 9 módulos del sistema
+  - M01: Gestión de usuarios
+  - M02: Recursos e inventario (con herencia)
+  - M03: Préstamos
+  - M04: Turnos
+  - M05: Índices
+  - M06: Listados y ordenamientos
+  - M07: Categorías
+  - M08: Sedes
+  - M09: Informes
+
+- **main.py**: Demo interactivo funcional
+- **README.md**: Documentación completa del proyecto
+- **pruebas/**: (próximo) Casos de prueba unitarias
